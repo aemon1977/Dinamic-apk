@@ -109,9 +109,13 @@ def open_window(url):
 def run_copia():
     subprocess.Popen(["python", os.path.join("copia.py")])  # Ejecutar copia.py
 
-# Función para ejecutar copia.py
+# Función para ejecutar restaura.py
 def run_restaura():
     subprocess.Popen(["python", os.path.join("restaura.py")])  # Ejecutar restaura.py
+
+# Función para ejecutar actualizar.py
+def run_actualitza():
+    subprocess.Popen(["python", os.path.join("actualizar.py")])  # Ejecutar actualizar.py
 
 # Función para ejecutar empresa.py
 def run_empresa():
@@ -185,6 +189,7 @@ menu_bar = tk.Menu(root)
 Archiu_menu = tk.Menu(menu_bar, tearoff=0)
 Archiu_menu.add_command(label="Copia de seguretat", command=run_copia)
 Archiu_menu.add_command(label="Restaura", command=run_restaura)
+Archiu_menu.add_command(label="Actualitza programa", command=run_actualitza)
 Archiu_menu.add_command(label="Empresa", command=run_empresa)
 menu_bar.add_cascade(label="Archiu", menu=Archiu_menu)
 
