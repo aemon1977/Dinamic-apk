@@ -105,6 +105,14 @@ def display_data():
 def open_window(url):
     messagebox.showinfo("Información", f"Se abrirá: {url}")
 
+# Función para ejecutar copia.py
+def run_copia():
+    subprocess.Popen(["python", os.path.join("copia.py")])  # Ejecutar copia.py
+
+# Función para ejecutar copia.py
+def run_restaura():
+    subprocess.Popen(["python", os.path.join("restaura.py")])  # Ejecutar restaura.py
+
 # Función para ejecutar activitats.py
 def run_activitats():
     subprocess.Popen(["python", os.path.join("llistat", "activitats.py")])  # Ejecutar activitats.py
@@ -168,6 +176,12 @@ root.grid_columnconfigure(0, weight=1)
 
 # Barra de menú
 menu_bar = tk.Menu(root)
+
+# Menú de Activitats
+Archiu_menu = tk.Menu(menu_bar, tearoff=0)
+Archiu_menu.add_command(label="Copia de seguretat", command=run_copia)
+Archiu_menu.add_command(label="Restaura", command=run_restaura)
+menu_bar.add_cascade(label="Archiu", menu=Archiu_menu)
 
 # Menú de Activitats
 activitats_menu = tk.Menu(menu_bar, tearoff=0)
