@@ -113,6 +113,10 @@ def run_copia():
 def run_restaura():
     subprocess.Popen(["python", os.path.join("restaura.py")])  # Ejecutar restaura.py
 
+# Función para ejecutar empresa.py
+def run_empresa():
+    subprocess.Popen(["python", os.path.join("empresa.py")])  # Ejecutar empresa.py
+
 # Función para ejecutar activitats.py
 def run_activitats():
     subprocess.Popen(["python", os.path.join("llistat", "activitats.py")])  # Ejecutar activitats.py
@@ -181,6 +185,7 @@ menu_bar = tk.Menu(root)
 Archiu_menu = tk.Menu(menu_bar, tearoff=0)
 Archiu_menu.add_command(label="Copia de seguretat", command=run_copia)
 Archiu_menu.add_command(label="Restaura", command=run_restaura)
+Archiu_menu.add_command(label="Empresa", command=run_empresa)
 menu_bar.add_cascade(label="Archiu", menu=Archiu_menu)
 
 # Menú de Activitats
