@@ -3,15 +3,13 @@ from tkinter import ttk, filedialog
 import mysql.connector
 from tkinter import messagebox
 from PIL import Image, ImageFile, ImageTk
-from datetime import datetime
-from tkcalendar import Calendar
 import io
-import configparser  # Import configparser to read the config.ini file
+import configparser
 
 # Permitir la carga de imágenes truncadas
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Read database configuration from config.ini
+# Leer la configuración de la base de datos desde config.ini
 config = configparser.ConfigParser()
 config.read('config.ini')
 
@@ -25,100 +23,112 @@ def conectar_db():
     )
 
 # Función para cargar datos de la base de datos
-def cargar_datos(busqueda=None):
+def cargar_datos(busqueda=None, orden_columna='Data_modificacio', orden='DESC'):
     conn = conectar_db()
     cursor = conn.cursor(dictionary=True)
 
-    query = "SELECT ID, DNI, Nom, Carrer, Codipostal, Poblacio, Provincia, email, Data_naixement, Telefon1, Telefon2, Telefon3, Numero_Conta, Sepa, Activitats, Quantitat, Alta, Baixa, Facial, Data_Inici_activitat, En_ma, Data_modificacio FROM socis"
+    query = """SELECT ID, DNI, Nom, Carrer, Codipostal, Poblacio, Provincia, email, 
+                Data_naixement, Telefon1, Telefon2, Telefon3, Numero_Conta, Sepa, 
+                Activitats, Quantitat, Alta, Baixa, Facial, Data_Inici_activitat, 
+                En_ma, Data_modificacio, usuari FROM socis"""
     if busqueda:
-        query += " WHERE Nom LIKE %s OR DNI LIKE %s"
-        cursor.execute(query, ('%' + busqueda + '%', '%' + busqueda + '%'))
+        query += " WHERE Nom LIKE %s OR DNI LIKE %s OR Activitats LIKE %s"
+        cursor.execute(query + f" ORDER BY {orden_columna} {orden}", 
+                       ('%' + busqueda + '%', '%' + busqueda + '%', '%' + busqueda + '%'))
     else:
+        query += f" ORDER BY {orden_columna} {orden}"
         cursor.execute(query)
 
     rows = cursor.fetchall()
     conn.close()
     return rows
 
+# Función para mostrar los datos en el Treeview
+def mostrar_datos(busqueda=None, orden_columna='Data_modificacio', orden='DESC'):
+    for row in tree.get_children():
+        tree.delete(row)
+
+    for row in cargar_datos(busqueda, orden_columna, orden):
+        tree.insert('', 'end', values=(
+            row['ID'], row['DNI'], row['Nom'], row['Carrer'], row['Codipostal'],
+            row['Poblacio'], row['Provincia'], row['email'], row['Data_naixement'],
+            row['Telefon1'], row['Telefon2'], row['Telefon3'], row['Numero_Conta'],
+            row['Sepa'], row['Activitats'], row['Quantitat'], row['Alta'], row['Baixa'],
+            row['Facial'], row['Data_Inici_activitat'], row['En_ma'], row['Data_modificacio'], row['usuari']
+        ))
+
+# Variable global para almacenar el orden de cada columna
+ordenes_columnas = {col: 'DESC' for col in ["Data_modificacio", "DNI", "Nom", "Carrer", 
+                                             "Codipostal", "Poblacio", "Provincia", 
+                                             "Email", "Data_naixement", "Telefon1", 
+                                             "Telefon2", "Telefon3", "Numero_Conta", 
+                                             "Sepa", "Activitats", "Quantitat", "Alta", 
+                                             "Baixa", "Facial", "Data_Inici_activitat", 
+                                             "En_ma"]}
+
+# Función para ordenar la tabla
+def ordenar_tabla(columna):
+    if columna in ordenes_columnas:
+        ordenes_columnas[columna] = 'ASC' if ordenes_columnas[columna] == 'DESC' else 'DESC'
+    mostrar_datos(orden_columna=columna, orden=ordenes_columnas[columna])
+
 # Función para eliminar el registro seleccionado
 def eliminar_registro():
-    # Obtener el ID del socio seleccionado en el Treeview
     selected_item = tree.selection()
     if selected_item:
         item = tree.item(selected_item)
-        id_socio = item['values'][0]  # Obtener el ID del socio
+        id_socio = item['values'][0]
 
-        # Confirmar la eliminación
-        respuesta = messagebox.askyesno("Confirmar", "¿Estás seguro de que quieres eliminar este registro?")
+        respuesta = messagebox.askyesno("Confirmar", "Estàs segur que vols eliminar aquest registre?")
         if respuesta:
             try:
-                # Conectar a la base de datos y eliminar el registro
                 conn = conectar_db()
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM socis WHERE ID = %s", (id_socio,))
                 conn.commit()
                 conn.close()
 
-                # Mostrar un mensaje de éxito
-                messagebox.showinfo("Éxito", "Registro eliminado correctamente.")
-                mostrar_datos()  # Volver a mostrar los datos en el Treeview después de la eliminación
+                messagebox.showinfo("Èxit", "Registre eliminat correctament.")
+                mostrar_datos()
             except mysql.connector.Error as e:
-                messagebox.showerror("Error", f"Error al eliminar el registro: {e}")
+                messagebox.showerror("Error", f"Error en eliminar el registre: {e}")
         else:
-            messagebox.showinfo("Cancelado", "La eliminación ha sido cancelada.")
+            messagebox.showinfo("Cancel·lat", "L'eliminació ha estat cancel·lada.")
     else:
-        messagebox.showwarning("Selección", "Por favor, selecciona un registro para eliminar.")
-
-# Función para mostrar los datos en el Treeview
-def mostrar_datos(busqueda=None):
-    # Limpiar los datos anteriores del Treeview
-    for row in tree.get_children():
-        tree.delete(row)
-
-    # Insertar los nuevos datos del socio
-    for row in cargar_datos(busqueda):
-        tree.insert('', 'end', values=(
-            row['ID'], row['DNI'], row['Nom'], row['Carrer'], row['Codipostal'],
-            row['Poblacio'], row['Provincia'], row['email'], row['Data_naixement'],
-            row['Telefon1'], row['Telefon2'], row['Telefon3'], row['Numero_Conta'],
-            row['Sepa'], row['Activitats'], row['Quantitat'], row['Alta'], row['Baixa'],
-            row['Facial'], row['Data_Inici_activitat'], row['En_ma'], row['Data_modificacio']  # Asegúrate de que esta columna esté aquí
-        ))
-
+        messagebox.showwarning("Selecció", "Si us plau, selecciona un registre per eliminar.")
 
 # Función para buscar
-def buscar():
+def buscar(event=None):  # Permitir que se llame sin argumentos
     busqueda = entrada_busqueda.get()
     mostrar_datos(busqueda)
 
 # Función para cargar datos en el formulario
 def cargar_en_formulario(event):
-    selected_item = tree.selection()  # Obtenemos el elemento seleccionado
-    if selected_item:  # Solo si hay un elemento seleccionado
-        item = tree.item(selected_item)  # Obtenemos los detalles del item
+    selected_item = tree.selection()
+    if selected_item:
+        item = tree.item(selected_item)
         datos = item['values']
         
-        # Llenamos los campos del formulario con los datos del socio seleccionado
         entrada_dni.delete(0, tk.END)
-        entrada_dni.insert(0, datos[1])  # DNI
+        entrada_dni.insert(0, datos[1])
 
-        entrada_nom.delete(0, tk.END)
-        entrada_nom.insert(0, datos[2])  # Nombre
+        entrada_nom.delete(0 , tk.END)
+        entrada_nom.insert(0, datos[2])
 
         entrada_carrer.delete(0, tk.END)
-        entrada_carrer.insert(0, datos[3])  # Calle
+        entrada_carrer.insert(0, datos[3])
 
         entrada_codipostal.delete(0, tk.END)
-        entrada_codipostal.insert(0, datos[4])  # Código postal
+        entrada_codipostal.insert(0, datos[4])
 
         entrada_poblacio.delete(0, tk.END)
-        entrada_poblacio.insert(0, datos[5])  # Población
+        entrada_poblacio.insert(0, datos[5])
 
         entrada_provincia.delete(0, tk.END)
-        entrada_provincia.insert(0, datos[6])  # Provincia
+        entrada_provincia.insert(0, datos[6])
 
         entrada_email.delete(0, tk.END)
-        entrada_email.insert(0, datos[7])  # Email
+        entrada_email.insert (0, datos[7])
 
         entrada_data_naixement.delete(0, tk.END)
         entrada_data_naixement.insert(0, datos[8])  # Fecha de nacimiento
@@ -139,13 +149,11 @@ def cargar_en_formulario(event):
         var_facial.set(datos[18] == 1)  # Facial
         var_en_ma.set(datos[19] == 1)  # En ma
 
-        # Cargar actividades en el checked listbox
         cargar_activitats(datos[14])  # Activitats del socio seleccionado
 
         entrada_quantitat.delete(0, tk.END)
         entrada_quantitat.insert(0, datos[15])  # Quantitat
         
-        # Cargar las nuevas fechas
         entrada_data_alta.delete(0, tk.END)
         entrada_data_alta.insert(0, datos[16])  # Data d'Alta
 
@@ -154,10 +162,11 @@ def cargar_en_formulario(event):
 
         entrada_data_inici_activitat.delete(0, tk.END)
         entrada_data_inici_activitat.insert(0, datos[19])  # Data d'Inici Activitat
-               
-        # Cargar foto
-        cargar_foto(datos[0])  # ID del socio seleccionado
 
+        entrada_usuari.delete(0, tk.END)
+        entrada_usuari.insert(0, datos[22])  # Usuari
+
+        cargar_foto(datos[0])  # ID del socio seleccionado
 
 # Función para cargar actividades
 def cargar_activitats(activitats):
@@ -165,11 +174,16 @@ def cargar_activitats(activitats):
         checked_listbox.selection_clear(index)
 
     if activitats:
-        activitats_seleccionadas = activitats.split(",")  # Suponiendo que las actividades están separadas por comas
+        activitats_seleccionadas = activitats.split(",")
         for i in range(checked_listbox.size()):
             actividad_nombre = checked_listbox.get(i)
-            if actividad_nombre.strip() in activitats_seleccionadas:  # .strip() para eliminar espacios
+            if actividad_nombre.strip() in activitats_seleccionadas:
                 checked_listbox.selection_set(i)
+
+# Crear una imagen en blanco para mostrar cuando no hay foto
+def crear_imagen_blanco():
+    imagen_blanco = Image.new("RGB", (100, 130), (255, 255, 255))  # Color blanco
+    return ImageTk.PhotoImage(imagen_blanco)
 
 # Función para cargar la foto
 def cargar_foto(id_socio):
@@ -180,50 +194,87 @@ def cargar_foto(id_socio):
         foto_blob = cursor.fetchone()
         conn.close()
 
-        if foto_blob and foto_blob[0]:  # Verifica que se encontró una foto
+        if foto_blob and foto_blob[0]:
             foto_bytes = foto_blob[0]
-            # Crear un objeto de imagen a partir de los bytes
             foto_imagen = Image.open(io.BytesIO(foto_bytes))
-            # Redimensionar la imagen a 100x130 píxeles
             foto_imagen = foto_imagen.resize((100, 130), Image.Resampling.LANCZOS)
-            # Convertir a PhotoImage
             foto_tk = ImageTk.PhotoImage(foto_imagen)
-            # Mostrar la foto en el label
             label_foto.config(image=foto_tk)
-            label_foto.image = foto_tk  # Mantener referencia
+            label_foto.image = foto_tk
         else:
-            label_foto.config(image='')  # Limpiar el label si no hay foto
+            # Cargar imagen en blanco si no hay foto
+            imagen_blanco = crear_imagen_blanco()
+            label_foto.config(image=imagen_blanco)
+            label_foto.image = imagen_blanco
     except Exception as e:
-        print(f"Error al cargar la foto: {e}")  # Mostrar el error en la consola
+        print(f"Error en carregar la foto: {e}")
+
+# Variable global para almacenar el valor de búsqueda
+busqueda_actual = ""
 
 # Función para guardar cambios
 def guardar_cambios():
+    global foto_ruta, busqueda_actual  # Asegúrate de incluir busqueda_actual aquí
     conn = conectar_db()
     cursor = conn.cursor()
 
     actividades_seleccionadas = [checked_listbox.get(i) for i in checked_listbox.curselection()]
     actividades_str = ",".join(actividades_seleccionadas)
 
-    query = """UPDATE socis SET DNI = %s, Nom = %s, Carrer = %s, Codipostal = %s,
-               Poblacio = %s, Provincia = %s, email = %s, Data_naixement = %s,
-               Telefon1 = %s, Telefon2 = %s, Telefon3 = %s, Numero_Conta = %s,
-               Sepa = %s, Facial = %s, En_ma = %s, Activitats = %s, Foto = %s WHERE ID = %s"""
+    query = """UPDATE socis SET 
+        DNI = %s, 
+        Nom = %s, 
+        Carrer = %s, 
+        Codipostal = %s,
+        Poblacio = %s, 
+        Provincia = %s, 
+        email = %s, 
+        Data_naixement = %s,
+        Telefon1 = %s, 
+        Telefon2 = %s, 
+        Telefon3 = %s, 
+        Numero_Conta = %s,
+        Sepa = %s, 
+        Facial = %s, 
+        En_ma = %s, 
+        Activitats = %s, 
+        Quantitat = %s, 
+        Alta = %s, 
+        Baixa = %s, 
+        Data_Inici_activitat = %s, 
+        usuari = %s 
+    WHERE ID = %s"""
 
-    id_socis = tree.item(tree.selection())['values'][0]  # Obtener el ID del socio seleccionado
-    foto_blob = obtener_foto_blob()  # Obtener la foto en formato BLOB
+    id_socis = tree.item(tree.selection())['values'][0]
 
-    cursor.execute(query, (
-        entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
-        entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-        entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
-        entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
-        var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, foto_blob, id_socis
-    ))
+    if foto_ruta:
+        foto_blob = obtener_foto_blob()
+        query += ", Foto = %s"
+        cursor.execute(query, (
+            entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
+            entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
+            entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
+            entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
+            var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
+            entrada_data_alta.get(), entrada_data_baixa.get(), entrada_data_inici_activitat.get(), entrada_usuari.get(), id_socis, foto_blob
+        ))
+    else:
+        cursor.execute(query, (
+            entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
+            entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
+            entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
+            entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
+            var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
+            entrada_data_alta.get(), entrada_data_baixa.get(), entrada_data_inici_activitat.get(), entrada_usuari.get(), id_socis
+        ))
+
     conn.commit()
     conn.close()
 
-    messagebox.showinfo("Éxito", "Dades actualizades correctament.")
-    mostrar_datos()  # Volver a mostrar los datos actualizados en la tabla
+    messagebox.showinfo("Éxit", "Dades actualizades correctament.")
+
+    # Mostrar los datos filtrados después de guardar
+    mostrar_datos(busqueda_actual)
 
 # Función para obtener el BLOB de la foto
 def obtener_foto_blob():
@@ -232,231 +283,119 @@ def obtener_foto_blob():
             return file.read()
     return None
 
-
 # Función para cargar una nueva foto
 def cargar_nueva_foto():
     global foto_ruta
+    selected_item = tree.selection()
+    if not selected_item:
+        messagebox.showwarning("Selecció", "Si us plau, selecciona un registre per carregar una foto.")
+        return
+
     foto_ruta = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.gif")])
     if foto_ruta:
-        # Mostrar la nueva foto en el Label
-        foto_imagen = Image.open(foto_ruta)
-        foto_imagen = foto_imagen.resize((100, 130), Image.Resampling.LANCZOS)  # Cambiar el tamaño a 100x130
-        foto_tk = ImageTk.PhotoImage(foto_imagen)
+        try:
+            # Leer la foto seleccionada y convertirla a formato compatible
+            with open(foto_ruta, 'rb') as file:
+                foto_blob = file.read()
 
-        # Mostrar la imagen en el Label
-        label_foto.config(image=foto_tk)
-        label_foto.image = foto_tk  # Mantener una referencia para evitar que se elimine el objeto
+            # Obtener el ID del registro seleccionado
+            item = tree.item(selected_item)
+            id_socio = item['values'][0]
+
+            # Actualizar la foto en la base de datos
+            conn = conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE socis SET Foto = %s WHERE ID = %s", (foto_blob, id_socio))
+            conn.commit()
+            conn.close()
+
+            # Mostrar la foto en la interfaz
+            foto_imagen = Image.open(io.BytesIO(foto_blob))
+            foto_imagen = foto_imagen.resize((100, 130), Image.Resampling.LANCZOS)
+            foto_tk = ImageTk.PhotoImage(foto_imagen)
+            label_foto.config(image=foto_tk)
+            label_foto.image = foto_tk
+
+            messagebox.showinfo("Èxit", "Foto carregada i guardada correctament.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No s'ha pogut desar la foto: {e}")
     else:
-        label_foto.config(image='')  # Si no se selecciona foto, borrar la imagen
+        messagebox.showinfo("Cancel·lat", "Càrrega de foto cancel·lada.")
 
 # Función para eliminar la foto
 def eliminar_foto():
     global foto_ruta
-    foto_ruta = None
-    label_foto.config(image='')  # Borrar la imagen
+    selected_item = tree.selection()
+    if selected_item:
+        item = tree.item(selected_item)
+        id_socio = item['values'][0]
+
+        respuesta = messagebox.askyesno("Confirma", "Estàs segur que vols eliminar la foto d'aquest registre?")
+        if respuesta:
+            try:
+                conn = conectar_db()
+                cursor = conn.cursor()
+                cursor.execute("UPDATE socis SET Foto = NULL WHERE ID = %s", (id_socio,))
+                conn.commit()
+                conn.close()
+
+                # Limpiar la imagen en la interfaz
+                foto_ruta = None
+                label_foto.config (image='')
+
+                messagebox.showinfo("Èxit", "Foto eliminada correctament.")
+            except mysql.connector.Error as e:
+                messagebox.showerror("Error ", f"Error en eliminar la foto: {e}")
+        else:
+            messagebox.showinfo("Cancel·lat", "L'eliminació de la foto ha estat cancel·lada.")
+    else:
+        messagebox.showwarning("Selecció", "Si us plau, selecciona un registre per eliminar la foto.")
 
 # Configuración de la interfaz gráfica
 root = tk.Tk()
 root.title("Modificar Socis")
 
-# Frame para el formulario
-frame_formulario = tk.Frame(root)
-frame_formulario.pack(pady=40)
+# Establecer el tamaño inicial de la ventana
+ancho_inicial = 1240
+alto_inicial = 800
 
-# Campos del formulario
-tk.Label(frame_formulario, text="DNI").grid(row=0, column=0)
-entrada_dni = tk.Entry(frame_formulario, width=35)
-entrada_dni.grid(row=0, column=1)
+# Calcular el nuevo ancho
+nuevo_ancho = ancho_inicial + 226  # 6 cm en píxeles
 
-tk.Label(frame_formulario, text="Nom").grid(row=1, column=0)
-entrada_nom = tk.Entry(frame_formulario, width=35)
-entrada_nom.grid(row=1, column=1)
+# Configurar el tamaño de la ventana
+root.geometry(f"{nuevo_ancho}x{alto_inicial}")
 
-tk.Label(frame_formulario, text="Carrer").grid(row=2, column=0)
-entrada_carrer = tk.Entry(frame_formulario, width=35)
-entrada_carrer.grid(row=2, column=1)
+# Crear un Frame para contener el Treeview y el campo de búsqueda
+frame_left = tk.Frame(root)
+frame_left.pack(side='left', padx=10, pady=20)
 
-tk.Label(frame_formulario, text="Codipostal").grid(row=3, column=0)
-entrada_codipostal = tk.Entry(frame_formulario, width=35)
-entrada_codipostal.grid(row=3, column=1)
+# Campo de búsqueda
+entrada_busqueda = tk.Entry(frame_left)
+entrada_busqueda.pack(pady=20)
 
-tk.Label(frame_formulario, text="Poblacio").grid(row=4, column=0)
-entrada_poblacio = tk.Entry(frame_formulario, width=35)
-entrada_poblacio.grid(row=4, column=1)
+# Enlazar el evento de teclear en el campo de búsqueda
+entrada_busqueda.bind("<KeyRelease>", buscar)
 
-tk.Label(frame_formulario, text="Provincia").grid(row=5, column=0)
-entrada_provincia = tk.Entry(frame_formulario, width=35)
-entrada_provincia.grid(row=5, column=1)
+btn_buscar = tk.Button(frame_left, text="Buscar", command=buscar)
+btn_buscar.pack()
 
-tk.Label(frame_formulario, text="Email").grid(row=6, column=0)
-entrada_email = tk.Entry(frame_formulario, width=35)
-entrada_email.grid(row=6, column=1)
+# Crear un Frame para contener el Treeview
+frame_tree = tk.Frame(frame_left)
+frame_tree.pack()
 
-# Etiqueta para la fecha de nacimiento
-tk.Label(frame_formulario, text="Data de naixement").grid(row=7, column=0)
+# Configurar el Treeview y mostrar los datos dentro del Frame
+tree = ttk.Treeview(frame_tree, columns=("ID", "DNI", "Nom", "Carrer", "Codipostal",
+                                         "Poblacio", "Provincia", "Email", "Data_naixement",
+                                         "Telefon1", "Telefon2", "Telefon3", "Numero_Conta",
+                                         "Sepa", "Activitats", "Quantitat", "Alta", "Baixa",
+                                         "Facial", "Data_Inici_activitat", "En_ma", "Data_modificacio"), 
+                                         show='headings')
 
-# Crear la función que muestra el calendario cuando el campo de entrada recibe el foco
-def mostrar_calendario(event):
-    # Crear un calendario emergente
-    calendario = Calendar(frame_formulario, selectmode='day', date_pattern='dd/mm/yyyy')
-    calendario.grid(row=8, column=1)
-    
-    # Función que se ejecuta cuando se selecciona una fecha en el calendario
-    def obtener_fecha(event):
-        entrada_data_naixement.delete(0, tk.END)
-        entrada_data_naixement.insert(0, calendario.get_date())
-        calendario.grid_forget()  # Ocultar el calendario después de seleccionar la fecha
-
-    # Vinculamos la selección de fecha al calendario
-    calendario.bind("<<CalendarSelected>>", obtener_fecha)
-
-# Entrada de texto para la fecha de nacimiento
-entrada_data_naixement = tk.Entry(frame_formulario, width=35)
-entrada_data_naixement.grid(row=7, column=1)
-
-# Configurar el evento de clic en el campo de entrada para mostrar el calendario
-entrada_data_naixement.bind("<FocusIn>", mostrar_calendario)
-tk.Label(frame_formulario, text="Telefon1").grid(row=8, column=0)
-entrada_telefon1 = tk.Entry(frame_formulario, width=35)
-entrada_telefon1.grid(row=8, column=1)
-
-tk.Label(frame_formulario, text="Telefon2").grid(row=9, column=0)
-entrada_telefon2 = tk.Entry(frame_formulario, width=35)
-entrada_telefon2.grid(row=9, column=1)
-
-tk.Label(frame_formulario, text="Telefon3").grid(row=10, column=0)
-entrada_telefon3 = tk.Entry(frame_formulario, width=35)
-entrada_telefon3.grid(row=10, column=1)
-
-tk.Label(frame_formulario, text="Numero Conta").grid(row=11, column=0)
-entrada_numero_conta = tk.Entry(frame_formulario, width=35)
-entrada_numero_conta.grid(row=11, column=1)
-
-var_sepa = tk.BooleanVar()
-tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=12, column=0)
-
-var_facial = tk.BooleanVar()
-tk.Checkbutton(frame_formulario, text="Facial", variable=var_facial).grid(row=13, column=0)
-
-var_en_ma = tk.BooleanVar()
-tk.Checkbutton(frame_formulario, text="En ma", variable=var_en_ma).grid(row=14, column=0)
-
-# Campo de actividades
-tk.Label(frame_formulario, text="Activitats").grid(row=15, column=0)
-checked_listbox = tk.Listbox(frame_formulario, selectmode=tk.MULTIPLE)
-checked_listbox.grid(row=15, column=1)
-
-# Cargar actividades desde la base de datos
-def cargar_activitats_disponibles():
-    conn = conectar_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT nom FROM activitats")  # Suponiendo que la tabla de actividades se llama 'activitats'
-    actividades = cursor.fetchall()
-    conn.close()
-    for actividad in actividades:
-        checked_listbox.insert(tk.END, actividad[0])
-
-cargar_activitats_disponibles()
-
-# Añadir el campo Quantitat debajo de Activitats
-tk.Label(frame_formulario, text="Quantitat").grid(row=18, column=0)
-entrada_quantitat = tk.Entry(frame_formulario, width=35)
-entrada_quantitat.grid(row=18, column=1)
-
-# Añadir las etiquetas y los campos de entrada para las nuevas fechas
-tk.Label(frame_formulario, text="Data d'Alta").grid(row=19, column=0)
-entrada_data_alta = tk.Entry(frame_formulario, width=35)
-entrada_data_alta.grid(row=19, column=1)
-
-tk.Label(frame_formulario, text="Data de Baixa").grid(row=20, column=0)
-entrada_data_baixa = tk.Entry(frame_formulario, width=35)
-entrada_data_baixa.grid(row=20, column=1)
-
-tk.Label(frame_formulario, text="Data d'Inici Activitat").grid(row=21, column=0)
-entrada_data_inici_activitat = tk.Entry(frame_formulario, width=35)
-entrada_data_inici_activitat.grid(row=21, column=1)
-
-# Añadir las funciones para mostrar el calendario cuando el campo de entrada recibe el foco
-def mostrar_calendario_alta(event):
-    calendario = Calendar(frame_formulario, selectmode='day', date_pattern='dd/mm/yyyy')
-    calendario.grid(row=18, column=1)
-
-    def obtener_fecha_alta(event):
-        entrada_data_alta.delete(0, tk.END)
-        entrada_data_alta.insert(0, calendario.get_date())
-        calendario.grid_forget()
-
-    calendario.bind("<<CalendarSelected>>", obtener_fecha_alta)
-
-def mostrar_calendario_baixa(event):
-    calendario = Calendar(frame_formulario, selectmode='day', date_pattern='dd/mm/yyyy')
-    calendario.grid(row=18, column=1)
-
-    def obtener_fecha_baixa(event):
-        entrada_data_baixa.delete(0, tk.END)
-        entrada_data_baixa.insert(0, calendario.get_date())
-        calendario.grid_forget()
-
-    calendario.bind("<<CalendarSelected>>", obtener_fecha_baixa)
-
-def mostrar_calendario_inici_activitat(event):
-    calendario = Calendar(frame_formulario, selectmode='day', date_pattern='dd/mm/yyyy')
-    calendario.grid(row=18, column=1)
-
-    def obtener_fecha_inici_activitat(event):
-        entrada_data_inici_activitat.delete(0, tk.END)
-        entrada_data_inici_activitat.insert(0, calendario.get_date())
-        calendario.grid_forget()
-
-    calendario.bind("<<CalendarSelected>>", obtener_fecha_inici_activitat)
-    
-    # Configurar los eventos de clic en los campos de entrada para mostrar el calendario
-entrada_data_alta.bind("<FocusIn>", mostrar_calendario_alta)
-entrada_data_baixa.bind("<FocusIn>", mostrar_calendario_baixa)
-entrada_data_inici_activitat.bind("<FocusIn>", mostrar_calendario_inici_activitat)
-
-# Label para mostrar la foto
-label_foto = tk.Label(root)  # Cambia a root para que esté fuera del frame
-# Calcular la distancia en píxeles para 3 cm
-distancia_cm_a_pixeles = 3 * 37.8  # 3 cm en píxeles
-
-# Definir la posición de la imagen en relación con el campo de texto del DNI
-# Suponiendo que el campo de entrada 'entrada_dni' está en la fila 0, columna 1
-# Puedes usar la propiedad `winfo_height()` de la entrada para obtener su altura y ajustarla en consecuencia
-altura_dni = entrada_dni.winfo_height()
-
-# Establecer la posición de la foto a 3 cm debajo del campo DNI
-label_foto.place(x=entrada_dni.winfo_x() + entrada_dni.winfo_width() + 10, y=entrada_dni.winfo_y() + altura_dni + distancia_cm_a_pixeles)
-
-# Botón para cargar nueva foto
-btn_cargar_foto = tk.Button(frame_formulario, text="Carregar Foto", command=cargar_nueva_foto)
-btn_cargar_foto.grid(row=14, column=2)
-
-# Botón para eliminar la foto
-btn_eliminar_foto = tk.Button(frame_formulario, text="Eliminar Foto", command=eliminar_foto)
-btn_eliminar_foto.grid(row=15, column=2)
-
-# Botón para eliminar registro
-btn_eliminar = tk.Button(root, text="Eliminar Registro", command=eliminar_registro)
-btn_eliminar.pack(pady=10)
-
-# Botón para guardar cambios
-btn_guardar = tk.Button(root, text="Desa", command=guardar_cambios)
-btn_guardar.pack(pady=20)
-
-# Configurar el Treeview y mostrar los datos
-tree = ttk.Treeview(root, columns=("ID", "DNI", "Nom", "Carrer", "Codipostal",
-                                    "Poblacio", "Provincia", "Email", "Data_naixement",
-                                    "Telefon1", "Telefon2", "Telefon3", "Numero_Conta",
-                                    "Sepa", "Activitats", "Quantitat", "Alta", "Baixa",
-                                    "Facial", "Data_Inici_activitat", "En_ma", "Data_modificacio"), show='headings')
-tree.pack(pady=20)
-
-# Configurar columnas
+# Configurar columnas del Treeview
 for col in tree["columns"]:
-    tree.heading(col, text=col, command=lambda _col=col: ordenar_por_columna(_col))
-    
-# Ocultar columnas específicas (por ejemplo, "ID" y "Numero_Conta")
+    tree.heading(col, text=col, command=lambda c=col: ordenar_tabla(c))
+
+# Ocultar columnas específicas
 tree.column("ID", width=0, stretch=False)
 tree.column("Numero_Conta", width=0, stretch=False)    
 tree.column("Carrer", width=0, stretch=False)    
@@ -476,46 +415,136 @@ tree.column("Facial", width=0, stretch=False)
 tree.column("Data_Inici_activitat", width=0, stretch=False) 
 tree.column("En_ma", width=0, stretch=False) 
 
+# Empaquetar el Treeview en el Frame
+tree.pack()
+
+# Enlazar el evento para seleccionar elementos en la tabla
 tree.bind("<ButtonRelease-1>", cargar_en_formulario)
 
-# # Diccionario para almacenar el estado de ordenación de las columnas
-ordenacion_estado = {}
+# Crear un Frame para el formulario
+frame_formulario = tk.Frame(root)
+frame_formulario.pack(side='right', pady=20, fill='both', expand=True)
 
-def ordenar_por_columna(col):
-    # Cambiar el estado de ordenación de la columna
-    if col not in ordenacion_estado:
-        ordenacion_estado[col] = True  # Orden ascendente por defecto
-    else:
-        ordenacion_estado[col] = not ordenacion_estado[col]  # Invertir el estado
+# Configurar tamaño mínimo del frame
+frame_formulario.config(width=400)
 
-    # Obtener los datos de la columna
-    lista_datos = [(tree.set(k, col), k) for k in tree.get_children('')]
+# Campos del formulario
+tk.Label(frame_formulario, text="DNI").grid(row=0, column=0)
+entrada_dni = tk.Entry(frame_formulario, width=35)
+entrada_dni.grid(row=0, column=1)
 
-    # Si la columna es de fecha, ordenar correctamente las fechas
-    if col == "Data_modificacio" or col == "Data_naixement":
-        lista_datos.sort(key=lambda t: t[0] if t[0] else '', reverse=not ordenacion_estado[col])  # Ordenar por fecha
-    else:
-        lista_datos.sort(reverse=ordenacion_estado[col])  # Ordenar de acuerdo con el estado
+tk.Label(frame_formulario, text="Nom").grid(row=1, column=0)
+entrada_nom = tk.Entry(frame_formulario, width=35)
+entrada_nom.grid(row=1, column=1)
 
-    # Cambiar el texto de la cabecera para mostrar el estado de ordenación
-    for item in tree["columns"]:
-        tree.heading(item, text=item)  # Reiniciar texto de cabeceras
+tk.Label(frame_formulario, text="Carrer").grid(row=2, column=0)
+entrada_carrer = tk.Entry(frame_formulario, width=35)
+entrada_carrer.grid(row=2, column=1)
 
-    tree.heading(col, text=col + (" ↓" if ordenacion_estado[col] else " ↑"))  # Actualizar la cabecera con el estado
+tk.Label(frame_formulario, text="Codipostal").grid(row=3, column= 0)
+entrada_codipostal = tk.Entry(frame_formulario, width=35)
+entrada_codipostal.grid(row=3, column=1)
 
-    # Rearmar los elementos en el Treeview
-    for index, (val, k) in enumerate(lista_datos):
-        tree.move(k, '', index)
-        
-# Mostrar datos iniciales
-mostrar_datos()
+tk.Label(frame_formulario, text="Població").grid(row=4, column=0)
+entrada_poblacio = tk.Entry(frame_formulario, width=35)
+entrada_poblacio.grid(row=4, column=1)
 
-# Campo de búsqueda
-entrada_busqueda = tk.Entry(root)
-entrada_busqueda.pack(pady=20)
+tk.Label(frame_formulario, text="Provincia").grid(row=5, column=0)
+entrada_provincia = tk.Entry(frame_formulario, width=35)
+entrada_provincia.grid(row=5, column=1)
 
-btn_buscar = tk.Button(root, text="Buscar", command=buscar)
-btn_buscar.pack()
+tk.Label(frame_formulario, text="Email").grid(row=6, column=0)
+entrada_email = tk.Entry(frame_formulario, width=35)
+entrada_email.grid(row=6, column=1)
+
+tk.Label(frame_formulario, text="Data de naixement").grid(row=7, column=0)
+entrada_data_naixement = tk.Entry(frame_formulario, width=35)
+entrada_data_naixement.grid(row=7, column=1)
+
+tk.Label(frame_formulario, text="Telefon1").grid(row=8, column=0)
+entrada_telefon1 = tk.Entry(frame_formulario, width=35)
+entrada_telefon1.grid(row=8, column=1)
+
+tk.Label(frame_formulario, text="Telefon2").grid(row=9, column=0)
+entrada_telefon2 = tk.Entry(frame_formulario, width=35)
+entrada_telefon2.grid(row=9, column=1)
+
+tk.Label(frame_formulario, text="Telefon3").grid(row=10, column=0)
+entrada_telefon3 = tk.Entry(frame_formulario, width=35)
+entrada_telefon3.grid(row=10, column=1)
+
+tk.Label(frame_formulario, text="Numero Conta").grid(row=11, column=0)
+entrada_numero_conta = tk.Entry(frame_formulario, width=35)
+entrada_numero_conta.grid(row=11, column=1)
+
+var_sepa = tk.BooleanVar()
+tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=13, column=0)
+
+var_facial = tk.BooleanVar()
+tk.Checkbutton(frame_formulario, text="Facial", variable=var_facial).grid(row=14, column=0)
+
+var_en_ma = tk.BooleanVar()
+tk.Checkbutton(frame_formulario, text="En ma", variable=var_en_ma).grid(row=15, column=0)
+
+tk.Label(frame_formulario, text="Activitats").grid(row=16, column=0)
+checked_listbox = tk.Listbox(frame_formulario, selectmode=tk.MULTIPLE)
+checked_listbox.grid(row=16, column=1)
+
+# Cargar actividades desde la base de datos
+def cargar_activitats_disponibles():
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nom FROM activitats")
+    actividades = cursor.fetchall()
+    conn.close()
+    for actividad in actividades:
+        checked_listbox.insert(tk.END, actividad[0])
+
+cargar_activitats_disponibles()
+
+tk.Label(frame_formulario, text="Quantitat").grid(row=19, column=0)
+entrada_quantitat = tk.Entry(frame_formulario, width=35)
+entrada_quantitat.grid(row=19, column=1)
+
+tk.Label(frame_formulario, text="Data d'Alta").grid(row=20, column=0)
+entrada_data_alta = tk.Entry(frame_formulario, width=35)
+entrada_data_alta.grid(row=20, column=1)
+
+tk.Label(frame_formulario, text="Data de Baixa").grid(row=21, column=0)
+entrada_data_baixa = tk.Entry(frame_formulario, width=35)
+entrada_data_baixa.grid(row=21, column=1)
+
+tk.Label(frame_formulario, text="Data d'Inici Activitat").grid(row=22, column=0)
+entrada_data_inici_activitat = tk.Entry(frame_formulario, width=35)
+entrada_data_inici_activitat.grid(row=22, column=1)
+
+# Campo de usuario
+tk.Label(frame_formulario, text="Usuari").grid(row=23, column=0)
+entrada_usuari = tk.Entry(frame_formulario, width=35)
+entrada_usuari.grid(row=23, column=1)
+
+# Label para foto
+label_foto = tk.Label(frame_formulario, width=100, height=130)  # Establecer un tamaño fijo
+label_foto.place(x=350, y=0)  # Coloca el label en las coordenadas x=350, y=0
+
+btn_cargar_foto = tk.Button(frame_formulario, text="Carregar Foto", command=cargar_nueva_foto)
+btn_cargar_foto.grid(row=14, column=2)
+
+btn_eliminar_foto = tk.Button(frame_formulario, text="Eliminar Foto", command=eliminar_foto)
+btn_eliminar_foto.grid(row=15, column=2)
+
+btn_eliminar = tk.Button(frame_formulario, text="Eliminar Registre", command=eliminar_registro)
+btn_eliminar.grid(row=24, column=0, columnspan=2, pady=10)
+
+# Cambiar el botón "Desa" para que esté en el mismo frame y a la derecha del botón "Eliminar Registre"
+btn_guardar = tk.Button(frame_formulario, text="Desa", command=guardar_cambios)
+btn_guardar.grid(row=24, column=2, padx=10, pady=10)  # Ajustar la posición
+
+# Variable para controlar el orden de la tabla
+orden = 'DESC'
+
+# Inicializar la variable foto_ruta
+foto_ruta = None
 
 # Mostrar datos iniciales
 mostrar_datos()
