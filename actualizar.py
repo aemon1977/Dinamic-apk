@@ -4,12 +4,15 @@ import urllib.request
 import shutil
 import sys
 import winshell
+import psutil
+import subprocess
+import ctypes
 
 # Ruta donde se descargará el archivo ZIP
 url = 'https://github.com/aemon1977/Dinamic-apk/archive/refs/heads/main.zip'
 download_path = r'C:\Dinamic\main.zip'
 extract_folder = r'C:\Dinamic'
-app_file = os.path.join(extract_folder, 'Dinamic-apk-main', 'app.es')
+app_exe = os.path.join(extract_folder, 'app.exe')  # Ruta de app.exe
 
 # Función para descargar el archivo ZIP
 def download_zip():
@@ -34,10 +37,21 @@ def move_files():
     for item in os.listdir(extracted_folder):
         s = os.path.join(extracted_folder, item)
         d = os.path.join(extract_folder, item)
+
+        # Si el destino ya existe y es un directorio, omitirlo
+        if os.path.exists(d):
+            if os.path.isdir(d):
+                print(f"La carpeta {d} ya existe, se omite.")
+            else:
+                print(f"El archivo {d} ya existe, se omite.")
+            continue  # Saltar al siguiente archivo
+
+        # Si es un directorio, moverlo
         if os.path.isdir(s):
             shutil.move(s, d)
         else:
             shutil.move(s, d)
+
     print("Archivos movidos.")
 
 # Función para eliminar la subcarpeta vacía
@@ -50,9 +64,9 @@ def remove_subfolder():
 # Función para crear un acceso directo
 def create_shortcut():
     print("Creando acceso directo en el escritorio...")
-    shortcut_path = os.path.join(winshell.desktop(), 'app_es.lnk')
-    target = app_file
-    w_dir = os.path.dirname(target)
+    shortcut_path = os.path.join(winshell.desktop(), 'app.lnk')  # Acceso directo en el escritorio
+    target = app_exe  # Ruta de app.exe
+    w_dir = os.path.dirname(target)  # Directorio de trabajo
     icon = target  # Usamos el mismo archivo como ícono
     icon_index = 0  # Usamos el primer ícono del archivo
 
@@ -74,8 +88,45 @@ def replace_script():
     shutil.copy(script_path, destination)
     print("Script sustituido.")
 
+# Función para detener todos los procesos de Python excepto el propio
+def stop_python_processes():
+    current_pid = os.getpid()  # Obtener el PID del script actual
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] == 'python.exe' and proc.info['pid'] != current_pid:
+            try:
+                proc.terminate()  # Terminar el proceso
+                print(f"Proceso {proc.info['pid']} de Python detenido.")
+            except psutil.NoSuchProcess:
+                pass
+
+# Función para mostrar una notificación al finalizar
+def show_notification(message):
+    try:
+        ctypes.windll.user32.MessageBoxW(0, message, "Notificación", 0x40 | 0x1)
+    except Exception as e:
+        print(f"Error mostrando notificación: {e}")
+
+# Función para lanzar app.exe
+def launch_app():
+    print("Lanzando app.exe...")
+    
+    # Verificar si app.exe existe
+    if not os.path.exists(app_exe):
+        print(f"Error: {app_exe} no encontrado.")
+        return
+
+    try:
+        # Ejecutar app.exe
+        process = subprocess.Popen(app_exe, shell=True)
+        print(f"app.exe lanzado correctamente (PID: {process.pid}).")
+    except Exception as e:
+        print(f"Error al lanzar app.exe: {e}")
+
 # Función principal que ejecuta todo el proceso
 def main():
+    # Detener procesos de Python (excepto el propio)
+    stop_python_processes()
+
     # Crear la carpeta de destino si no existe
     if not os.path.exists(extract_folder):
         os.makedirs(extract_folder)
@@ -99,7 +150,14 @@ def main():
     # Eliminar archivo ZIP después de la instalación
     if os.path.exists(download_path):
         os.remove(download_path)
+
     print("Proceso completado.")
+    
+    # Mostrar notificación al finalizar
+    show_notification("Proceso completado exitosamente.")
+
+    # Lanzar app.exe
+    launch_app()
 
 if __name__ == '__main__':
     main()
