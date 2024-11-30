@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
+from tkcalendar import DateEntry  # Importar DateEntry
 import mysql.connector
-from tkinter import messagebox
 from PIL import Image, ImageFile, ImageTk
 import io
 import configparser
+from datetime import datetime
 
 # Permitir la carga de imágenes truncadas
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -16,10 +17,10 @@ config.read('config.ini')
 # Configuración de la base de datos
 def conectar_db():
     return mysql.connector.connect(
-        host=config['mysql']['host'],
-        user=config['mysql']['user'],
-        password=config['mysql']['password'],
-        database=config['mysql']['database']
+        host='localhost',
+        user='root',
+        password='',
+        database='gimnas'
     )
 
 # Función para cargar datos de la base de datos
@@ -41,6 +42,20 @@ def cargar_datos(busqueda=None, orden_columna='Data_modificacio', orden='DESC'):
 
     rows = cursor.fetchall()
     conn.close()
+
+    # Formatear las fechas
+    for row in rows:
+        if row['Data_naixement']:
+            row['Data_naixement'] = row['Data_naixement'].strftime('%d-%m-%Y')
+        if row['Alta']:
+            row['Alta'] = row['Alta'].strftime('%d-%m-%Y')
+        if row['Baixa']:
+            row['Baixa'] = row['Baixa'].strftime('%d-%m-%Y')
+        if row['Data_Inici_activitat']:
+            row['Data_Inici_activitat'] = row['Data_Inici_activitat'].strftime('%d-%m-%Y')
+        if row['Data_modificacio']:
+            row['Data_modificacio'] = row['Data_modificacio'].strftime('%d-%m-%Y')
+
     return rows
 
 # Función para mostrar los datos en el Treeview
@@ -112,7 +127,7 @@ def cargar_en_formulario(event):
         entrada_dni.delete(0, tk.END)
         entrada_dni.insert(0, datos[1])
 
-        entrada_nom.delete(0 , tk.END)
+        entrada_nom.delete(0, tk.END)
         entrada_nom.insert(0, datos[2])
 
         entrada_carrer.delete(0, tk.END)
@@ -128,10 +143,9 @@ def cargar_en_formulario(event):
         entrada_provincia.insert(0, datos[6])
 
         entrada_email.delete(0, tk.END)
-        entrada_email.insert (0, datos[7])
+        entrada_email.insert(0, datos[7])
 
-        entrada_data_naixement.delete(0, tk.END)
-        entrada_data_naixement.insert(0, datos[8])  # Fecha de nacimiento
+        entrada_data_naixement.set_date(datetime.strptime(datos[8], '%d-%m-%Y'))  # Fecha de nacimiento
 
         entrada_telefon1.delete(0, tk.END)
         entrada_telefon1.insert(0, datos[9])  # Teléfono 1
@@ -154,14 +168,11 @@ def cargar_en_formulario(event):
         entrada_quantitat.delete(0, tk.END)
         entrada_quantitat.insert(0, datos[15])  # Quantitat
         
-        entrada_data_alta.delete(0, tk.END)
-        entrada_data_alta.insert(0, datos[16])  # Data d'Alta
+        entrada_data_alta.set_date(datetime.strptime(datos[16], '%d-%m-%Y'))  # Data d'Alta
 
-        entrada_data_baixa.delete(0, tk.END)
-        entrada_data_baixa.insert(0, datos[17])  # Data de Baixa
+        entrada_data_baixa.set_date(datetime.strptime(datos[17], '%d-%m-%Y'))  # Data de Baixa
 
-        entrada_data_inici_activitat.delete(0, tk.END)
-        entrada_data_inici_activitat.insert(0, datos[19])  # Data d'Inici Activitat
+        entrada_data_inici_activitat.set_date(datetime.strptime(datos[19], '%d-%m-%Y'))  # Data d'Inici Activitat
 
         entrada_usuari.delete(0, tk.END)
         entrada_usuari.insert(0, datos[22])  # Usuari
@@ -182,7 +193,7 @@ def cargar_activitats(activitats):
 
 # Crear una imagen en blanco para mostrar cuando no hay foto
 def crear_imagen_blanco():
-    imagen_blanco = Image.new("RGB", (100, 130), (255, 255, 255))  # Color blanco
+    imagen_blanco = Image.new("RGB", (100, 130), (255, 255 , 255))  # Color blanco
     return ImageTk.PhotoImage(imagen_blanco)
 
 # Función para cargar la foto
@@ -207,19 +218,29 @@ def cargar_foto(id_socio):
             label_foto.config(image=imagen_blanco)
             label_foto.image = imagen_blanco
     except Exception as e:
-        print(f"Error en carregar la foto: {e}")
+        print(f"Error en cargar la foto: {e}")
 
 # Variable global para almacenar el valor de búsqueda
 busqueda_actual = ""
 
 # Función para guardar cambios
 def guardar_cambios():
-    global foto_ruta, busqueda_actual  # Asegúrate de incluir busqueda_actual aquí
+    global foto_ruta, busqueda_actual
     conn = conectar_db()
     cursor = conn.cursor()
 
     actividades_seleccionadas = [checked_listbox.get(i) for i in checked_listbox.curselection()]
     actividades_str = ",".join(actividades_seleccionadas)
+
+    # Convertir las fechas al formato yyyy-mm-dd
+    try:
+        fecha_naixement = entrada_data_naixement.get_date().strftime('%Y-%m-%d')
+        fecha_alta = entrada_data_alta.get_date().strftime('%Y-%m-%d')
+        fecha_baixa = entrada_data_baixa.get_date().strftime('%Y-%m-%d')
+        fecha_inici_activitat = entrada_data_inici_activitat.get_date().strftime('%Y-%m-%d')
+    except ValueError:
+        messagebox.showerror("Error", "Formato de fecha incorrecto. Usa el formato dd-mm-yyyy.")
+        return
 
     query = """UPDATE socis SET 
         DNI = %s, 
@@ -253,27 +274,25 @@ def guardar_cambios():
         cursor.execute(query, (
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
+            entrada_email.get(), fecha_naixement, entrada_telefon1.get(),
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            entrada_data_alta.get(), entrada_data_baixa.get(), entrada_data_inici_activitat.get(), entrada_usuari.get(), id_socis, foto_blob
+            fecha_alta, fecha_baixa, fecha_inici_activitat, entrada_usuari.get(), id_socis, foto_blob
         ))
     else:
         cursor.execute(query, (
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
+            entrada_email.get(), fecha_naixement, entrada_telefon1.get(),
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            entrada_data_alta.get(), entrada_data_baixa.get(), entrada_data_inici_activitat.get(), entrada_usuari.get(), id_socis
+            fecha_alta, fecha_baixa, fecha_inici_activitat, entrada_usuari.get(), id_socis
         ))
 
     conn.commit()
     conn.close()
 
     messagebox.showinfo("Éxit", "Dades actualizades correctament.")
-
-    # Mostrar los datos filtrados después de guardar
     mostrar_datos(busqueda_actual)
 
 # Función para obtener el BLOB de la foto
@@ -341,7 +360,7 @@ def eliminar_foto():
 
                 # Limpiar la imagen en la interfaz
                 foto_ruta = None
-                label_foto.config (image='')
+                label_foto.config(image='')
 
                 messagebox.showinfo("Èxit", "Foto eliminada correctament.")
             except mysql.connector.Error as e:
@@ -388,8 +407,7 @@ tree = ttk.Treeview(frame_tree, columns=("ID", "DNI", "Nom", "Carrer", "Codipost
                                          "Poblacio", "Provincia", "Email", "Data_naixement",
                                          "Telefon1", "Telefon2", "Telefon3", "Numero_Conta",
                                          "Sepa", "Activitats", "Quantitat", "Alta", "Baixa",
-                                         "Facial", "Data_Inici_activitat", "En_ma", "Data_modificacio"), 
-                                         show='headings')
+                                         "Facial", "Data_Inici_activitat", "En_ma", "Data_modificacio"), show='headings')
 
 # Configurar columnas del Treeview
 for col in tree["columns"]:
@@ -441,7 +459,7 @@ tk.Label(frame_formulario, text="Carrer").grid(row=2, column=0)
 entrada_carrer = tk.Entry(frame_formulario, width=35)
 entrada_carrer.grid(row=2, column=1)
 
-tk.Label(frame_formulario, text="Codipostal").grid(row=3, column= 0)
+tk.Label(frame_formulario, text="Codipostal").grid(row=3, column=0)
 entrada_codipostal = tk.Entry(frame_formulario, width=35)
 entrada_codipostal.grid(row=3, column=1)
 
@@ -458,7 +476,7 @@ entrada_email = tk.Entry(frame_formulario, width=35)
 entrada_email.grid(row=6, column=1)
 
 tk.Label(frame_formulario, text="Data de naixement").grid(row=7, column=0)
-entrada_data_naixement = tk.Entry(frame_formulario, width=35)
+entrada_data_naixement = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
 entrada_data_naixement.grid(row=7, column=1)
 
 tk.Label(frame_formulario, text="Telefon1").grid(row=8, column=0)
@@ -478,7 +496,7 @@ entrada_numero_conta = tk.Entry(frame_formulario, width=35)
 entrada_numero_conta.grid(row=11, column=1)
 
 var_sepa = tk.BooleanVar()
-tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=13, column=0)
+tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=13 , column=0)
 
 var_facial = tk.BooleanVar()
 tk.Checkbutton(frame_formulario, text="Facial", variable=var_facial).grid(row=14, column=0)
@@ -507,15 +525,15 @@ entrada_quantitat = tk.Entry(frame_formulario, width=35)
 entrada_quantitat.grid(row=19, column=1)
 
 tk.Label(frame_formulario, text="Data d'Alta").grid(row=20, column=0)
-entrada_data_alta = tk.Entry(frame_formulario, width=35)
+entrada_data_alta = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
 entrada_data_alta.grid(row=20, column=1)
 
 tk.Label(frame_formulario, text="Data de Baixa").grid(row=21, column=0)
-entrada_data_baixa = tk.Entry(frame_formulario, width=35)
+entrada_data_baixa = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
 entrada_data_baixa.grid(row=21, column=1)
 
 tk.Label(frame_formulario, text="Data d'Inici Activitat").grid(row=22, column=0)
-entrada_data_inici_activitat = tk.Entry(frame_formulario, width=35)
+entrada_data_inici_activitat = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
 entrada_data_inici_activitat.grid(row=22, column=1)
 
 # Campo de usuario
