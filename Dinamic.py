@@ -186,12 +186,12 @@ root.grid_columnconfigure(0, weight=1)
 menu_bar = tk.Menu(root)
 
 # Menú de Activitats
-Archiu_menu = tk.Menu(menu_bar, tearoff=0)
-Archiu_menu.add_command(label="Copia de seguretat", command=run_copia)
-Archiu_menu.add_command(label="Restaura", command=run_restaura)
-Archiu_menu.add_command(label="Actualitza programa", command=run_actualitza)
-Archiu_menu.add_command(label="Empresa", command=run_empresa)
-menu_bar.add_cascade(label="Archiu", menu=Archiu_menu)
+Arxiu_menu = tk.Menu(menu_bar, tearoff=0)
+Arxiu_menu.add_command(label="Copia de seguretat", command=run_copia)
+Arxiu_menu.add_command(label="Restaura", command=run_restaura)
+Arxiu_menu.add_command(label="Actualitza programa", command=run_actualitza)
+Arxiu_menu.add_command(label="Empresa", command=run_empresa)
+menu_bar.add_cascade(label="Arxiu", menu=Arxiu_menu)
 
 # Menú de Activitats
 activitats_menu = tk.Menu(menu_bar, tearoff=0)
