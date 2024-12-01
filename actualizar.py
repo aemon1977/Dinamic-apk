@@ -77,8 +77,13 @@ def remove_subfolder():
 
 # Función para crear un acceso directo
 def create_shortcut():
-    print("Creando acceso directo en el escritorio...")
     shortcut_path = os.path.join(winshell.desktop(), 'Gimnas.lnk')
+    
+    if os.path.exists(shortcut_path):
+        print("El acceso directo ya existe, no se creará uno nuevo.")
+        return
+
+    print("Creando acceso directo en el escritorio...")
     target = app_exe
     w_dir = os.path.dirname(target)
     icon = target
@@ -119,20 +124,6 @@ def show_notification(message):
     except Exception as e:
         print(f"Error mostrando notificación: {e}")
 
-# Función para lanzar app.exe
-def launch_app():
-    print("Lanzando app.exe...")
-    
-    if not os.path.exists(app_exe):
-        print(f"Error: {app_exe} no encontrado.")
-        return
-
-    try:
-        process = subprocess.Popen(app_exe, shell =True)
-        print(f"app.exe lanzado correctamente (PID: {process.pid}).")
-    except Exception as e:
-        print(f"Error al lanzar app.exe: {e}")
-
 # Función principal que ejecuta todo el proceso
 def main():
     # Verificar e instalar módulos necesarios
@@ -169,9 +160,6 @@ def main():
     
     # Mostrar notificación al finalizar
     show_notification("Proceso completado exitosamente.")
-
-    # Lanzar app.exe
-    launch_app()
 
 if __name__ == '__main__':
     main()
