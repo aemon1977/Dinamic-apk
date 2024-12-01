@@ -167,9 +167,9 @@ def run_fitxae():
 def run_llistatsocise():
     subprocess.Popen(["python", os.path.join("esporadics", "llistatsocis.py")])  # Ejecutar fitxa.py
 
-# Función para ejecutar contabilitat.py en la carpeta 'esporadics'
+# Función para ejecutar contabilitat.py en la carpeta 'comptabilitat'
 def run_contabilitat():
-    subprocess.Popen(["python", os.path.join("esporadics", "contabilitat.py")])  # Ejecutar fitxa.py
+    subprocess.Popen(["python", os.path.join("comptabilitat", "comptabilitat.py")])  # Ejecutar fitxa.py
 
 
 # Configuración de la ventana principal
