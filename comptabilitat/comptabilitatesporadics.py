@@ -7,12 +7,18 @@ class ContabilitatApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Gestió Financera - Esporàdics")
-        self.conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gimnas"
-        )
+        try:
+            self.conn = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="gimnas"
+            )
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error", f"Error al conectar a la base de datos: {err}")
+            root.destroy()
+            return
+
         self.cursor = self.conn.cursor()
 
         # Variables per als filtres
@@ -26,6 +32,7 @@ class ContabilitatApp:
         self.setup_ui()
 
         # Carregar dades inicials
+        self.import_data()  # Importar dades al iniciar
         self.filter_data()
 
     def setup_ui(self):
@@ -110,48 +117,49 @@ class ContabilitatApp:
         scroll_y.pack(side="right", fill="y")
 
     def get_years(self):
-        self.cursor.execute("SELECT DISTINCT YEAR(data) FROM contabilitat_esporadics ORDER BY YEAR(data) DESC")
-        return [str(row[0]) for row in self.cursor.fetchall()]
+        self.cursor.execute("SELECT DISTINCT YEAR(Alta) FROM esporadics ORDER BY YEAR(Alta) DESC")
+        return [str(year[0]) for year in self.cursor.fetchall()]
+
+    def import_data(self):
+        self.cursor.execute("SELECT nom, MONTH(Alta) AS mes, YEAR(Alta) AS any, SUM(quantitat) AS total FROM esporadics GROUP BY nom, mes, any")
+        self.data = self.cursor.fetchall()
+        self.update_treeview()
 
     def filter_data(self):
-        self.tree.delete(*self.tree.get_children())  # Netejar la taula
         month = self.selected_month.get()
         year = self.selected_year.get()
-
-        query = """
-        SELECT nom_soci, MONTH(data) AS mes, YEAR(data) AS any, SUM(quantitat) AS total
-        FROM contabilitat_esporadics
-        """
         conditions = []
         params = []
 
         if month != "Tots":
-            conditions.append("MONTH(data) = %s")
+            conditions.append("MONTH(Alta) = %s")
             params.append(month)
         if year != "Tots":
-            conditions.append("YEAR(data) = %s")
+            conditions.append("YEAR(Alta) = %s")
             params.append(year)
 
+        query = "SELECT nom, MONTH(Alta) AS mes, YEAR(Alta) AS any, SUM(quantitat) AS total FROM esporadics"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-
-        query += " GROUP BY nom_soci, mes, any"
+        query += " GROUP BY nom, mes, any"
 
         self.cursor.execute(query, params)
-        rows = self.cursor.fetchall()
+        self.data = self.cursor.fetchall()
+        self.update_treeview()
+
+    def update_treeview(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
         total_global = 0
-        if rows:
-            for row in rows:
-                self.tree.insert("", "end", values=row)
-                total_global += row[3]  # Sumar la columna total
-        else:
-            messagebox.showinfo("Info", "No hi ha dades per mostrar.")
+        for row in self.data:
+            self.tree.insert("", "end", values=row)
+            total_global += row[3]  # Sumar el total
 
-        # Mostrar el total global
-        self.total_global_var.set(f"Total global: {total_global:.2f} €")
+        self.total_global_var.set(f"Total: {total_global:.2f} €")
 
-    def on_close(self):
+    def on_closing(self):
+        self.cursor.close()
         self.conn.close()
         self.root.destroy()
 
@@ -159,5 +167,5 @@ class ContabilitatApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = ContabilitatApp(root)
-    root.protocol("WM_DELETE_WINDOW", app.on_close)
+    root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.mainloop()
