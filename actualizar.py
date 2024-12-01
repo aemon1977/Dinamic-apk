@@ -8,6 +8,24 @@ import psutil
 import subprocess
 import ctypes
 
+# Función para instalar módulos necesarios
+def install(package):
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+
+# Verificar e instalar módulos necesarios
+def check_and_install_modules():
+    try:
+        import psutil
+    except ImportError:
+        print("psutil no está instalado. Instalando...")
+        install('psutil')
+
+    try:
+        import winshell
+    except ImportError:
+        print("winshell no está instalado. Instalando...")
+        install('winshell')
+
 # Ruta donde se descargará el archivo ZIP
 url = 'https://github.com/aemon1977/Dinamic-apk/archive/refs/heads/main.zip'
 download_path = r'C:\Dinamic\main.zip'
@@ -24,7 +42,6 @@ def download_zip():
 def unzip_file():
     print("Descomprimiendo archivo ZIP...")
     with zipfile.ZipFile(download_path, 'r') as zip_ref:
-        # Extraemos el contenido directamente en C:\Dinamic
         zip_ref.extractall(extract_folder)
     print("Descompresión completada.")
 
@@ -33,20 +50,17 @@ def move_files():
     print("Moviendo archivos a C:\\Dinamic...")
     extracted_folder = os.path.join(extract_folder, 'Dinamic-apk-main')
 
-    # Mover todos los archivos de la subcarpeta a la carpeta principal
     for item in os.listdir(extracted_folder):
         s = os.path.join(extracted_folder, item)
         d = os.path.join(extract_folder, item)
 
-        # Si el destino ya existe y es un directorio, omitirlo
         if os.path.exists(d):
             if os.path.isdir(d):
                 print(f"La carpeta {d} ya existe, se omite.")
             else:
                 print(f"El archivo {d} ya existe, se omite.")
-            continue  # Saltar al siguiente archivo
+            continue
 
-        # Si es un directorio, moverlo
         if os.path.isdir(s):
             shutil.move(s, d)
         else:
@@ -64,17 +78,16 @@ def remove_subfolder():
 # Función para crear un acceso directo
 def create_shortcut():
     print("Creando acceso directo en el escritorio...")
-    shortcut_path = os.path.join(winshell.desktop(), 'app.lnk')  # Acceso directo en el escritorio
-    target = app_exe  # Ruta de app.exe
-    w_dir = os.path.dirname(target)  # Directorio de trabajo
-    icon = target  # Usamos el mismo archivo como ícono
-    icon_index = 0  # Usamos el primer ícono del archivo
+    shortcut_path = os.path.join(winshell.desktop(), 'Gimnas.lnk')
+    target = app_exe
+    w_dir = os.path.dirname(target)
+    icon = target
+    icon_index = 0
 
-    # Crear acceso directo
     with winshell.shortcut(shortcut_path) as link:
         link.path = target
         link.working_directory = w_dir
-        link.icon_location = (icon, icon_index)  # Pasamos una tupla (ruta, índice)
+        link.icon_location = (icon, icon_index)
     print("Acceso directo creado.")
 
 # Función para sustituirse a sí mismo
@@ -90,11 +103,11 @@ def replace_script():
 
 # Función para detener todos los procesos de Python excepto el propio
 def stop_python_processes():
-    current_pid = os.getpid()  # Obtener el PID del script actual
+    current_pid = os.getpid()
     for proc in psutil.process_iter(['pid', 'name']):
         if proc.info['name'] == 'python.exe' and proc.info['pid'] != current_pid:
             try:
-                proc.terminate()  # Terminar el proceso
+                proc.terminate()
                 print(f"Proceso {proc.info['pid']} de Python detenido.")
             except psutil.NoSuchProcess:
                 pass
@@ -110,20 +123,21 @@ def show_notification(message):
 def launch_app():
     print("Lanzando app.exe...")
     
-    # Verificar si app.exe existe
     if not os.path.exists(app_exe):
         print(f"Error: {app_exe} no encontrado.")
         return
 
     try:
-        # Ejecutar app.exe
-        process = subprocess.Popen(app_exe, shell=True)
+        process = subprocess.Popen(app_exe, shell =True)
         print(f"app.exe lanzado correctamente (PID: {process.pid}).")
     except Exception as e:
         print(f"Error al lanzar app.exe: {e}")
 
 # Función principal que ejecuta todo el proceso
 def main():
+    # Verificar e instalar módulos necesarios
+    check_and_install_modules()
+
     # Detener procesos de Python (excepto el propio)
     stop_python_processes()
 
