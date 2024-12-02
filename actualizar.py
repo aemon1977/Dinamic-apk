@@ -167,7 +167,7 @@ def main():
     print("Proceso completado.")
     
     # Mostrar notificación al finalizar
-    show_notification("Proceso completado exitosamente.")
+    show_notification("Actualització Finalitzada.")
 
 if __name__ == '__main__':
     main()
