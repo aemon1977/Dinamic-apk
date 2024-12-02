@@ -14,7 +14,7 @@ logging.basicConfig(filename='mysql_shutdown.log', level=logging.DEBUG, format='
 def tancar_servici_mysql():
     try:
         # Absolute path to mysqladmin
-        mysqladmin_path = r"C:\Dinamic\mysql\bin\mysqladmin.exe"
+        mysqladmin_path = r"\Dinamic\mysql\bin\mysqladmin.exe"
         
         # Command to shut down MySQL service
         command = [mysqladmin_path, '-u', 'root', 'shutdown']
