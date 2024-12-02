@@ -8,6 +8,27 @@ from PIL import Image, ImageTk
 import subprocess
 import logging
 
+# Defineix la versió actual de la teva aplicació
+CURRENT_VERSION = "1.0.0"  # Actualitza això amb la teva versió actual
+
+def check_for_updates():
+    try:
+        # URL del fitxer version.txt al repositori de GitHub
+        url = "https://raw.githubusercontent.com/aemon1977/Dinamic-apk/main/version.txt"
+        response = requests.get(url)
+        latest_version = response.text.strip()  # Obtenim la versió més recent del fitxer
+
+        # Compara les versions
+        if latest_version != CURRENT_VERSION:
+            messagebox.showinfo("Actualització disponible", f"Hi ha una nova versió disponible: {latest_version}.")
+        else:
+            logging.info("L'aplicació està actualitzada.")
+    except Exception as e:
+        logging.error(f"Error en verificar actualitzacions: {str(e)}")
+
+# Crida la funció check_for_updates al principi de l'aplicació
+check_for_updates()
+
 # Configure logging
 logging.basicConfig(filename='mysql_shutdown.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
 
