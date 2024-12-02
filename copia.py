@@ -10,7 +10,7 @@ def backup_database():
     if file_path:
         try:
             # Ruta al ejecutable mysqldump
-            mysqldump_path = r"C:\xampp\mysql\bin\mysqldump.exe"
+            mysqldump_path = r"\Dinamic\mysql\bin\mysqldump.exe"
             # Comando para hacer la copia de seguridad
             command = [mysqldump_path, "-u", "root", "gimnas"]
 

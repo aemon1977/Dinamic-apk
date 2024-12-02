@@ -1,0 +1,9 @@
+pywin32
+tkcalendar
+pillow
+mysql-connector-python
+fpdf
+pandas
+requests
+openpyxl
+reportlab
