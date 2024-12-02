@@ -251,7 +251,7 @@ esporadics_menu.add_command(label="Llistat", command=run_llistatsocise) # Cambia
 esporadics_menu.add_command(label="Contabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
 menu_bar.add_cascade(label="Esporádics", menu=esporadics_menu)
 
-# Menú de Esporádics
+# Menú de Comptabilitat
 Comptabilitat_menu = tk.Menu(menu_bar, tearoff=0)
 Comptabilitat_menu.add_command(label="Comptabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
 menu_bar.add_cascade(label="Comptabilitat", menu=Comptabilitat_menu)
