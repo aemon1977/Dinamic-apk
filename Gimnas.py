@@ -7,7 +7,36 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import subprocess
 import logging
-import requests
+
+# Configure logging
+logging.basicConfig(filename='mysql_shutdown.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
+
+def tancar_servici_mysql():
+    try:
+        # Absolute path to mysqladmin
+        mysqladmin_path = r"C:\Dinamic\mysql\bin\mysqladmin.exe"
+        
+        # Command to shut down MySQL service
+        command = [mysqladmin_path, '-u', 'root', 'shutdown']
+        
+        # Execute the command
+        result = subprocess.run(command, capture_output=True, text=True)
+        
+        # Log the output
+        if result.returncode == 0:
+            logging.info("MySQL service shut down successfully.")
+        else:
+            logging.error(f"Failed to shut down MySQL service: {result.stderr}")
+    except Exception as e:
+        logging.error(f"Error shutting down MySQL service: {str(e)}")
+
+def sortir():
+    if messagebox.askokcancel("Sortir", "Vols sortir de l'aplicació?"):
+        tancar_servici_mysql()  # Shut down the MySQL service
+        root.destroy()  # Close the GUI window
+
+def al_tancar():
+    sortir()  # Call the sortir function when the window is closed
 
 # Configuración del logger
 logging.basicConfig(
@@ -15,41 +44,6 @@ logging.basicConfig(
     level=logging.ERROR,  # Nivel de logs (ERROR para capturar solo errores)
     format="%(asctime)s - %(levelname)s - %(message)s"  # Formato del log
 )
-
-# Archivo para almacenar la fecha de la última verificación
-LAST_CHECK_FILE = "last_check.txt"
-VERSION_FILE = "version.txt"  # Archivo que contiene la versión actual
-
-# Función para leer la versión actual desde un archivo
-def read_current_version():
-    try:
-        with open(VERSION_FILE, 'r') as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        return "0.0.0"  # Valor por defecto si no se encuentra el archivo
-
-# Función para verificar actualizaciones
-def check_for_updates():
-    current_version = read_current_version()  # Leer la versión desde el archivo
-    try:
-        response = requests.get("https://api.github.com/repos/aemon1977/Dinamic-apk/releases/latest")
-        response.raise_for_status()  # Lanza un error si la solicitud falla
-        latest_release = response.json()
-        latest_version = latest_release['tag_name'].lstrip('v')  # Eliminar el prefijo 'v' si existe
-        
-        if latest_version != current_version:
-            show_update_notification(latest_version, latest_release['html_url'])
-        else:
-            print("Estás utilizando la última versión.")
-    except requests.RequestException as e:
-        print(f"Error al acceder a la API de GitHub: {e}")
-
-def show_update_notification(latest_version, release_url):
-    message = f"Hi ha disponible una nova versió"
-    messagebox.showinfo("Actualizació Disponible", message)
-
-# Llama a la función al inicio de tu aplicación
-check_for_updates()
 
 # Función para conectarse a la base de datos y obtener datos
 def get_data():
@@ -202,11 +196,11 @@ def run_fitxae():
 
 # Función para ejecutar llistatsocis.py en la carpeta 'esporadics'
 def run_llistatsocise():
-    subprocess.Popen(["python", os.path.join("esporadics", "llistatsocis.py")])  # Ejecutar llistatsocis.py
+    subprocess.Popen(["python", os.path.join("esporadics", "llistatsocis.py")])  # Ejecutar fitxa.py
 
-# Función para ejecutar comptabilitat.py en la carpeta 'comptabilitat'
+# Función para ejecutar contabilitat.py en la carpeta 'comptabilitat'
 def run_contabilitat():
-    subprocess.Popen(["python", os.path.join("comptabilitat", "comptabilitatesporadics.py")])  # Ejecutar contabilitat.py
+    subprocess.Popen(["python", os.path.join("comptabilitat", "comptabilitat.py")])  # Ejecutar fitxa.py
 
 
 # Configuración de la ventana principal
@@ -218,6 +212,9 @@ root.minsize(800, 600)  # Tamaño mínimo de la ventana
 # Configurar expansión para que la ventana se ajuste
 root.grid_rowconfigure(1, weight=1)
 root.grid_columnconfigure(0, weight=1)
+
+# Set the protocol for window close
+root.protocol("WM_DELETE_WINDOW", al_tancar)
 
 # Barra de menú
 menu_bar = tk.Menu(root)
@@ -254,10 +251,8 @@ esporadics_menu.add_command(label="Llistat", command=run_llistatsocise) # Cambia
 esporadics_menu.add_command(label="Contabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
 menu_bar.add_cascade(label="Esporádics", menu=esporadics_menu)
 
-# Menú de Esporádics
-comptabilitat_menu = tk.Menu(menu_bar, tearoff=0)
-comptabilitat_menu.add_command(label="Comptabilitat Esporadics", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
-menu_bar.add_cascade(label="Comptabilitat", menu=comptabilitat_menu)
+# Add "Sortir" menu item directly to the menu bar
+menu_bar.add_command(label="Sortir", command=sortir)
 
 # Configurar la barra de menú
 root.config(menu=menu_bar)

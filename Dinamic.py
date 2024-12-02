@@ -7,6 +7,37 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import subprocess
 import logging
+
+# Configure logging
+logging.basicConfig(filename='mysql_shutdown.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
+
+def tancar_servici_mysql():
+    try:
+        # Absolute path to mysqladmin
+        mysqladmin_path = r"C:\Dinamic\mysql\bin\mysqladmin.exe"
+        
+        # Command to shut down MySQL service
+        command = [mysqladmin_path, '-u', 'root', 'shutdown']
+        
+        # Execute the command
+        result = subprocess.run(command, capture_output=True, text=True)
+        
+        # Log the output
+        if result.returncode == 0:
+            logging.info("MySQL service shut down successfully.")
+        else:
+            logging.error(f"Failed to shut down MySQL service: {result.stderr}")
+    except Exception as e:
+        logging.error(f"Error shutting down MySQL service: {str(e)}")
+
+def sortir():
+    if messagebox.askokcancel("Sortir", "Vols sortir de l'aplicació?"):
+        tancar_servici_mysql()  # Shut down the MySQL service
+        root.destroy()  # Close the GUI window
+
+def al_tancar():
+    sortir()  # Call the sortir function when the window is closed
+
 # Configuración del logger
 logging.basicConfig(
     filename="app_error.log",  # Nombre del archivo donde se guardarán los logs
@@ -182,6 +213,9 @@ root.minsize(800, 600)  # Tamaño mínimo de la ventana
 root.grid_rowconfigure(1, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
+# Set the protocol for window close
+root.protocol("WM_DELETE_WINDOW", al_tancar)
+
 # Barra de menú
 menu_bar = tk.Menu(root)
 
@@ -216,6 +250,9 @@ esporadics_menu.add_command(label="Fitxa", command=run_fitxae) # Cambiado para e
 esporadics_menu.add_command(label="Llistat", command=run_llistatsocise) # Cambiado para ejecutar llistatsocis.py
 esporadics_menu.add_command(label="Contabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
 menu_bar.add_cascade(label="Esporádics", menu=esporadics_menu)
+
+# Add "Sortir" menu item directly to the menu bar
+menu_bar.add_command(label="Sortir", command=sortir)
 
 # Configurar la barra de menú
 root.config(menu=menu_bar)
