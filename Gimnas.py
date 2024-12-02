@@ -6,6 +6,7 @@ from mysql.connector import Error
 from tkinter import ttk
 from PIL import Image, ImageTk
 import subprocess
+import requests
 import logging
 
 # Defineix la versió actual de la teva aplicació
