@@ -54,13 +54,21 @@ def move_files():
         s = os.path.join(extracted_folder, item)
         d = os.path.join(extract_folder, item)
 
-        if os.path.exists(d):
-            if os.path.isdir(d):
-                print(f"La carpeta {d} ya existe, se omite.")
-            else:
-                print(f"El archivo {d} ya existe, se omite.")
+        # Omitir la carpeta mysql
+        if item == 'mysql' and os.path.isdir(s):
+            print("La carpeta 'mysql' se omite.")
             continue
 
+        # Si el archivo o carpeta ya existe, lo eliminamos antes de mover
+        if os.path.exists(d):
+            if os.path.isdir(d):
+                print(f"Eliminando la carpeta existente: {d}")
+                shutil.rmtree(d)  # Eliminar la carpeta existente
+            else:
+                print(f"Eliminando el archivo existente: {d}")
+                os.remove(d)  # Eliminar el archivo existente
+
+        # Mover el nuevo archivo o carpeta
         if os.path.isdir(s):
             shutil.move(s, d)
         else:
