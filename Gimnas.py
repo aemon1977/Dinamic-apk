@@ -200,7 +200,7 @@ def run_llistatsocise():
 
 # Función para ejecutar contabilitat.py en la carpeta 'comptabilitat'
 def run_contabilitat():
-    subprocess.Popen(["python", os.path.join("comptabilitat", "comptabilitat.py")])  # Ejecutar fitxa.py
+    subprocess.Popen(["python", os.path.join("comptabilitat", "comptabilitatesporadics.py")])  # Ejecutar fitxa.py
 
 
 # Configuración de la ventana principal
@@ -250,6 +250,11 @@ esporadics_menu.add_command(label="Fitxa", command=run_fitxae) # Cambiado para e
 esporadics_menu.add_command(label="Llistat", command=run_llistatsocise) # Cambiado para ejecutar llistatsocis.py
 esporadics_menu.add_command(label="Contabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
 menu_bar.add_cascade(label="Esporádics", menu=esporadics_menu)
+
+# Menú de Esporádics
+Comptabilitat_menu = tk.Menu(menu_bar, tearoff=0)
+Comptabilitat_menu.add_command(label="Comptabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
+menu_bar.add_cascade(label="Esporádics", menu=Comptabilitat_menu)
 
 # Add "Sortir" menu item directly to the menu bar
 menu_bar.add_command(label="Sortir", command=sortir)
