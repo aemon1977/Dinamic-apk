@@ -254,7 +254,7 @@ menu_bar.add_cascade(label="Esporádics", menu=esporadics_menu)
 # Menú de Esporádics
 Comptabilitat_menu = tk.Menu(menu_bar, tearoff=0)
 Comptabilitat_menu.add_command(label="Comptabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
-menu_bar.add_cascade(label="Esporádics", menu=Comptabilitat_menu)
+menu_bar.add_cascade(label="Comptabilitat", menu=Comptabilitat_menu)
 
 # Add "Sortir" menu item directly to the menu bar
 menu_bar.add_command(label="Sortir", command=sortir)
