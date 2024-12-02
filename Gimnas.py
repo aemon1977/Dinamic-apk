@@ -14,7 +14,7 @@ CURRENT_VERSION = "1.0.0"  # Actualitza això amb la teva versió actual
 def check_for_updates():
     try:
         # URL del fitxer version.txt al repositori de GitHub
-        url = "https://raw.githubusercontent.com/aemon1977/Dinamic-apk/main/version.txt"
+        url = "https://github.com/aemon1977/Dinamic-apk/blob/main/version.txt"
         response = requests.get(url)
         latest_version = response.text.strip()  # Obtenim la versió més recent del fitxer
 
