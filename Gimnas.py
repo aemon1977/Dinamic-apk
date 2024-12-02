@@ -9,25 +9,46 @@ import subprocess
 import requests
 import logging
 
-# Defineix la versió actual de la teva aplicació
-CURRENT_VERSION = "1.0.0"  # Actualitza això amb la teva versió actual
+# Configuración del logger
+logging.basicConfig(
+    filename="app_error.log",  # Nombre del archivo donde se guardarán los logs
+    level=logging.ERROR,  # Nivel de logs (ERROR para capturar solo errores)
+    format="%(asctime)s - %(levelname)s - %(message)s"  # Formato del log
+)
 
-def check_for_updates():
+# Archivo para almacenar la fecha de la última verificación
+LAST_CHECK_FILE = "last_check.txt"
+VERSION_FILE = "version.txt"  # Archivo que contiene la versión actual
+
+# Función para leer la versión actual desde un archivo
+def read_current_version():
     try:
-        # URL del fitxer version.txt al repositori de GitHub
-        url = "https://github.com/aemon1977/Dinamic-apk/blob/main/version.txt"
-        response = requests.get(url)
-        latest_version = response.text.strip()  # Obtenim la versió més recent del fitxer
+        with open(VERSION_FILE, 'r') as file:
+            return file.read().strip()
+    except FileNotFoundError:
+        return "0.0.0"  # Valor por defecto si no se encuentra el archivo
 
-        # Compara les versions
-        if latest_version != CURRENT_VERSION:
-            messagebox.showinfo("Actualització disponible", f"Hi ha una nova versió disponible: {latest_version}.")
+# Función para verificar actualizaciones
+def check_for_updates():
+    current_version = read_current_version()  # Leer la versión desde el archivo
+    try:
+        response = requests.get("https://api.github.com/repos/aemon1977/Dinamic-apk/releases/latest")
+        response.raise_for_status()  # Lanza un error si la solicitud falla
+        latest_release = response.json()
+        latest_version = latest_release['tag_name'].lstrip('v')  # Eliminar el prefijo 'v' si existe
+        
+        if latest_version != current_version:
+            show_update_notification(latest_version, latest_release['html_url'])
         else:
-            logging.info("L'aplicació està actualitzada.")
-    except Exception as e:
-        logging.error(f"Error en verificar actualitzacions: {str(e)}")
+            print("Estás utilizando la última versión.")
+    except requests.RequestException as e:
+        print(f"Error al acceder a la API de GitHub: {e}")
 
-# Crida la funció check_for_updates al principi de l'aplicació
+def show_update_notification(latest_version, release_url):
+    message = f"Hi ha disponible una nova versió"
+    messagebox.showinfo("Actualizació Disponible", message)
+
+# Llama a la función al inicio de tu aplicación
 check_for_updates()
 
 # Configure logging
