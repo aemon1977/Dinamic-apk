@@ -10,7 +10,7 @@ def restore_database():
     if file_path:
         try:
             # Ruta al ejecutable mysql
-            mysql_path = r"\Dinamic\mysql\bin\mysql.exe"
+            mysql_path = r"C:\xampp\mysql\bin\mysql.exe"
             # Comando para restaurar la base de datos
             command = [mysql_path, "-u", "root", "gimnas"]
 
