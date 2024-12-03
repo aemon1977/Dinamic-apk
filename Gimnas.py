@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 import subprocess
 import requests
 import logging
+import threading
 
 # Configuración del logger
 logging.basicConfig(
@@ -189,7 +190,9 @@ def run_restaura():
 
 # Función para ejecutar actualizar.py
 def run_actualitza():
-    subprocess.Popen(["python", os.path.join("actualizar.py")])  # Ejecutar actualizar.py
+    # Crear un hilo para ejecutar el actualizador
+    update_thread = threading.Thread(target=lambda: subprocess.Popen(["python", os.path.join("actualizador", "update.py")]))
+    update_thread.start()  # Iniciar el hilo
 
 # Función para ejecutar empresa.py
 def run_empresa():
