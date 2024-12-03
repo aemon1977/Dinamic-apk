@@ -1,10 +1,19 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 import mysql.connector
-from tkinter import messagebox
 from PIL import Image, ImageFile, ImageTk
 import io
 import configparser
+from datetime import datetime
+
+def convertir_fecha(fecha_str, formato_entrada='%d-%m-%Y', formato_salida='%Y-%m-%d'):
+    if fecha_str and fecha_str != 'None':
+        try:
+            fecha = datetime.strptime(fecha_str, formato_entrada)
+            return fecha.strftime(formato_salida)
+        except ValueError:
+            return None  # Si no se puede convertir, devuelve None
+    return None
 
 # Permitir la carga de imágenes truncadas
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -23,7 +32,7 @@ def conectar_db():
     )
 
 # Función para cargar datos de la base de datos
-def cargar_datos(busqueda=None, orden_columna='Nom', orden='ASC'):
+def cargar_datos(busqueda=None, orden_columna='Baixa', orden='DESC'):
     conn = conectar_db()
     cursor = conn.cursor(dictionary=True)
 
@@ -44,7 +53,7 @@ def cargar_datos(busqueda=None, orden_columna='Nom', orden='ASC'):
     return rows
 
 # Función para mostrar los datos en el Treeview
-def mostrar_datos(busqueda=None, orden_columna='Nom', orden='ASC'):
+def mostrar_datos(busqueda=None, orden_columna='Baixa', orden='DESC'):
     for row in tree.get_children():
         tree.delete(row)
 
@@ -60,7 +69,9 @@ def mostrar_datos(busqueda=None, orden_columna='Nom', orden='ASC'):
 # Función para ordenar la tabla
 def ordenar_tabla(columna):
     global orden
-    if columna == 'Nom':
+    if columna == 'Baixa':
+        orden = 'ASC' if orden == 'DESC' else 'DESC'
+    else:
         orden = 'ASC' if orden == 'DESC' else 'DESC'
     mostrar_datos(orden_columna=columna, orden=orden)
 
@@ -87,10 +98,10 @@ def eliminar_registro():
         else:
             messagebox.showinfo("Cancelado", "La eliminación ha sido cancelada.")
     else:
-        messagebox.showwarning("Selección", "Por favor, selecciona un registro para eliminar.")
+        messagebox.showerror("Error", f"Error al eliminar el registro: {e}")
 
 # Función para buscar
-def buscar(event=None):  # Permitir que se llame sin argumentos
+def buscar(event=None):
     busqueda = entrada_busqueda.get()
     mostrar_datos(busqueda)
 
@@ -105,7 +116,7 @@ def cargar_en_formulario(event):
         entrada_dni.insert(0, datos[1])
 
         entrada_nom.delete(0, tk.END)
-        entrada_nom.insert (0, datos[2])
+        entrada_nom.insert(0, datos[2])
 
         entrada_carrer.delete(0, tk.END)
         entrada_carrer.insert(0, datos[3])
@@ -122,43 +133,68 @@ def cargar_en_formulario(event):
         entrada_email.delete(0, tk.END)
         entrada_email.insert(0, datos[7])
 
+        # Convertir fecha de nacimiento
+        fecha_naixement = datos[8]
+        if fecha_naixement and fecha_naixement != 'None':
+            fecha_naixement = datetime.strptime(fecha_naixement, '%Y-%m-%d').strftime('%d-%m-%Y')
+        else:
+            fecha_naixement = ''
         entrada_data_naixement.delete(0, tk.END)
-        entrada_data_naixement.insert(0, datos[8])  # Fecha de nacimiento
+        entrada_data_naixement.insert(0, fecha_naixement)
 
         entrada_telefon1.delete(0, tk.END)
-        entrada_telefon1.insert(0, datos[9])  # Teléfono 1
+        entrada_telefon1.insert(0, datos[9])
 
         entrada_telefon2.delete(0, tk.END)
-        entrada_telefon2.insert(0, datos[10])  # Teléfono 2
+        entrada_telefon2.insert(0, datos[10])
 
         entrada_telefon3.delete(0, tk.END)
-        entrada_telefon3.insert(0, datos[11])  # Teléfono 3
+        entrada_telefon3.insert(0, datos[11])
 
         entrada_numero_conta.delete(0, tk.END)
-        entrada_numero_conta.insert(0, datos[12])  # Número de cuenta
+        entrada_numero_conta.insert(0, datos[12])
 
-        var_sepa.set(datos[13] == 1)  # SEPA
-        var_facial.set(datos[18] == 1)  # Facial
-        var_en_ma.set(datos[19] == 1)  # En ma
+        var_sepa.set(datos[13] == 1)
+        var_facial.set(datos[18] == 1)
+        var_en_ma.set(datos[19] == 1)
 
-        cargar_activitats(datos[14])  # Activitats del socio seleccionado
+        cargar_activitats(datos[14])
 
         entrada_quantitat.delete(0, tk.END)
-        entrada_quantitat.insert(0, datos[15])  # Quantitat
-        
+        entrada_quantitat.insert(0, datos[15])
+
+        # Convertir fecha de alta
+        fecha_alta = datos[16]
+        if fecha_alta and fecha_alta != 'None':
+            fecha_alta = datetime.strptime(fecha_alta, '%Y-%m-%d').strftime('%d-%m-%Y')
+        else:
+            fecha_alta = ''
         entrada_data_alta.delete(0, tk.END)
-        entrada_data_alta.insert(0, datos[16])  # Data d'Alta
+        entrada_data_alta.insert(0, fecha_alta)
 
+        # Convertir fecha de baixa
+        fecha_baixa = datos[17]
+        if fecha_baixa and fecha_baixa != 'None':
+            fecha_baixa = datetime.strptime(fecha_baixa, '%Y-%m-%d').strftime('%d-%m-%Y')
+        else:
+            fecha_baixa = ''
         entrada_data_baixa.delete(0, tk.END)
-        entrada_data_baixa.insert(0, datos[17])  # Data de Baixa
+        entrada_data_baixa.insert(0, fecha_baixa)
 
+        # Convertir fecha de inicio de actividad
+        fecha_inici_activitat = datos[19]
+        if fecha_inici_activitat and fecha_inici_activitat != 'None':
+            fecha_inici_activitat = datetime.strptime(fecha_inici_activitat, '%Y-%m-%d').strftime('%d-%m-%Y')
+        else:
+            fecha_inici_activitat = ''
         entrada_data_inici_activitat.delete(0, tk.END)
-        entrada_data_inici_activitat.insert(0, datos[19])  # Data d'Inici Activitat
+        entrada_data_inici_activitat.insert(0, fecha_inici_activitat)
 
         entrada_usuari.delete(0, tk.END)
-        entrada_usuari.insert(0, datos[21])  # Usuari
+        entrada_usuari.insert(0, datos[21])
 
-        cargar_foto(datos[0])  # ID del socio seleccionado
+        cargar_foto(datos[0])
+    
 
 # Función para cargar actividades
 def cargar_activitats(activitats):
@@ -206,12 +242,18 @@ busqueda_actual = ""
 
 # Función para guardar cambios
 def guardar_cambios():
-    global foto_ruta, busqueda_actual  # Asegúrate de incluir busqueda_actual aquí
+    global foto_ruta, busqueda_actual
     conn = conectar_db()
     cursor = conn.cursor()
 
     actividades_seleccionadas = [checked_listbox.get(i) for i in checked_listbox.curselection()]
     actividades_str = ",".join(actividades_seleccionadas)
+
+    # Obtener fechas y convertirlas
+    data_naixement = convertir_fecha(entrada_data_naixement.get(), '%d-%m-%Y', '%Y-%m-%d')
+    data_alta = convertir_fecha(entrada_data_alta.get(), '%d-%m-%Y', '%Y-%m-%d')
+    data_baixa = convertir_fecha(entrada_data_baixa.get(), '%d-%m-%Y', '%Y-%m-%d')
+    data_inici_activitat = convertir_fecha(entrada_data_inici_activitat.get(), '%d-%m-%Y', '%Y-%m-%d')
 
     query = """UPDATE esporadics SET 
         DNI = %s, 
@@ -245,34 +287,32 @@ def guardar_cambios():
         cursor.execute(query, (
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
+            entrada_email.get(), data_naixement, entrada_telefon1.get(),
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            entrada_data_alta.get(), entrada_data_baixa.get(), entrada_data_inici_activitat.get(), entrada_usuari.get(), id_socis, foto_blob
+            data_alta, data_baixa, data_inici_activitat, entrada_usuari.get(), id_socis, foto_blob
         ))
     else:
         cursor.execute(query, (
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), entrada_data_naixement.get(), entrada_telefon1.get(),
+            entrada_email.get(), data_naixement, entrada_telefon1.get(),
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            entrada_data_alta.get(), entrada_data_baixa.get(), entrada_data_inici_activitat.get(), entrada_usuari.get(), id_socis
+            data_alta, data_baixa, data_inici_activitat, entrada_usuari.get(), id_socis
         ))
 
     conn.commit()
     conn.close()
 
     messagebox.showinfo("Éxito", "Dades actualizades correctament.")
-
-    # Mostrar los datos filtrados después de guardar
-    mostrar_datos(busqueda_actual)  # Llama a mostrar_datos con el valor de búsqueda actual
+    mostrar_datos(busqueda_actual)
 
 # Función para buscar
 def buscar(event=None):
-    global busqueda_actual  # Asegúrate de incluir busqueda_actual aquí
-    busqueda_actual = entrada_busqueda.get()  # Almacena el valor de búsqueda
-    mostrar_datos(busqueda_actual)  # Muestra los datos filtrados
+    global busqueda_actual
+    busqueda_actual = entrada_busqueda.get()
+    mostrar_datos(busqueda_actual)
 
 # Función para obtener el BLOB de la foto
 def obtener_foto_blob():
@@ -292,22 +332,18 @@ def cargar_nueva_foto():
     foto_ruta = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.gif")])
     if foto_ruta:
         try:
-            # Leer la foto seleccionada y convertirla a formato compatible
             with open(foto_ruta, 'rb') as file:
                 foto_blob = file.read()
 
-            # Obtener el ID del registro seleccionado
             item = tree.item(selected_item)
             id_socio = item['values'][0]
 
-            # Actualizar la foto en la base de datos
             conn = conectar_db()
             cursor = conn.cursor()
             cursor.execute("UPDATE esporadics SET Foto = %s WHERE ID = %s", (foto_blob, id_socio))
             conn.commit()
             conn.close()
 
-            # Mostrar la foto en la interfaz
             foto_imagen = Image.open(io.BytesIO(foto_blob))
             foto_imagen = foto_imagen.resize((100, 130), Image.Resampling.LANCZOS)
             foto_tk = ImageTk.PhotoImage(foto_imagen)
@@ -337,11 +373,10 @@ def eliminar_foto():
                 conn.commit()
                 conn.close()
 
-                # Limpiar la imagen en la interfaz
                 foto_ruta = None
                 label_foto.config(image='')
 
-                messagebox.showinfo("Éxito", "Foto eliminada correctament .")
+                messagebox.showinfo("Éxito", "Foto eliminada correctament.")
             except mysql.connector.Error as e:
                 messagebox.showerror("Error ", f"Error en eliminar la foto: {e}")
         else:
@@ -351,7 +386,7 @@ def eliminar_foto():
 
 # Configuración de la interfaz gráfica
 root = tk.Tk()
-root.title("Modificar Socis")
+root.title("Modificar Esporadics")
 
 # Establecer el tamaño inicial de la ventana
 ancho_inicial = 1240
@@ -408,7 +443,7 @@ tree.column("Telefon3", width=0, stretch=False)
 tree.column("Sepa", width=0, stretch=False)
 tree.column("Quantitat", width=0, stretch=False) 
 tree.column("Alta", width=0, stretch=False) 
-tree.column("Baixa", width=0, stretch=False) 
+tree.column("Baixa", width=100, stretch=True)  # Asegúrate de que la columna "Baixa" sea visible
 tree.column("Facial", width=0, stretch=False) 
 tree.column("Data_Inici_activitat", width=0, stretch=False) 
 tree.column("En_ma", width=0, stretch=False) 
@@ -473,7 +508,7 @@ entrada_telefon3.grid(row=10, column=1)
 
 tk.Label(frame_formulario, text="Numero Conta").grid(row=11, column=0)
 entrada_numero_conta = tk.Entry(frame_formulario, width=35)
-entrada_numero_conta.grid(row=11, column=1)
+entrada_numero_conta.grid(row =11, column=1)
 
 var_sepa = tk.BooleanVar()
 tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=13, column=0)
@@ -482,7 +517,7 @@ var_facial = tk.BooleanVar()
 tk.Checkbutton(frame_formulario, text="Facial", variable=var_facial).grid(row=14, column=0)
 
 var_en_ma = tk.BooleanVar()
-tk.Checkbutton(frame_formulario, text="En ma", variable=var_en_ma).grid(row=15, column=0)
+tk.Checkbutton(frame_formulario, text="En ma ", variable=var_en_ma).grid(row=15, column=0)
 
 tk.Label(frame_formulario, text="Activitats").grid(row=16, column=0)
 checked_listbox = tk.Listbox(frame_formulario, selectmode=tk.MULTIPLE)
@@ -539,12 +574,12 @@ btn_guardar = tk.Button(frame_formulario, text="Desa", command=guardar_cambios)
 btn_guardar.grid(row=24, column=2, padx=10, pady=10)  # Ajustar la posición
 
 # Variable para controlar el orden de la tabla
-orden = 'ASC'
+orden = 'DESC'
 
 # Inicializar la variable foto_ruta
 foto_ruta = None
 
 # Mostrar datos iniciales
-mostrar_datos()
+mostrar_datos() 
 
 root.mainloop()

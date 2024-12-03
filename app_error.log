@@ -2,3 +2,13 @@
 2024-12-01 17:07:58,438 - ERROR - Error al verificar actualizaciones: name 'datetime' is not defined
 2024-12-01 17:09:35,618 - ERROR - Error al verificar actualizaciones: name 'datetime' is not defined
 2024-12-01 17:17:36,970 - ERROR - Error al verificar actualizaciones: name 'datetime' is not defined
+2024-12-02 21:01:47,596 - ERROR - Failed to shut down MySQL service: mysqladmin: connect to server at 'localhost' failed
+error: 'Can't connect to MySQL server on 'localhost:3306' (10061)'
+Check that mysqld is running on localhost and that the port is 3306.
+You can check this by doing 'telnet localhost 3306'
+
+2024-12-03 08:13:13,265 - ERROR - Failed to shut down MySQL service: mysqladmin: connect to server at 'localhost' failed
+error: 'Can't connect to MySQL server on 'localhost:3306' (10061)'
+Check that mysqld is running on localhost and that the port is 3306.
+You can check this by doing 'telnet localhost 3306'
+

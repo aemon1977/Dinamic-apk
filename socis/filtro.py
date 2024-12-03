@@ -1,11 +1,17 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from tkcalendar import DateEntry  # Importar DateEntry
+from tkcalendar import DateEntry  # Importar DateEntry de tkcalendar
 import mysql.connector
 from PIL import Image, ImageFile, ImageTk
 import io
 import configparser
 from datetime import datetime
+
+def format_date(date_str):
+    if date_str and date_str != 'None':  # Asegúrate de que no sea 'None'
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')  # Convertir a objeto datetime
+        return date_obj.strftime('%d-%m-%Y')  # Formatear a dd-mm-yyyy
+    return ""  # Retornar vacío si date_str es None o 'None'
 
 # Permitir la carga de imágenes truncadas
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -17,10 +23,10 @@ config.read('config.ini')
 # Configuración de la base de datos
 def conectar_db():
     return mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='',
-        database='gimnas'
+        host=config['mysql']['host'],
+        user=config['mysql']['user'],
+        password=config['mysql']['password'],
+        database=config['mysql']['database']
     )
 
 # Función para cargar datos de la base de datos
@@ -42,20 +48,6 @@ def cargar_datos(busqueda=None, orden_columna='Data_modificacio', orden='DESC'):
 
     rows = cursor.fetchall()
     conn.close()
-
-    # Formatear las fechas
-    for row in rows:
-        if row['Data_naixement']:
-            row['Data_naixement'] = row['Data_naixement'].strftime('%d-%m-%Y')
-        if row['Alta']:
-            row['Alta'] = row['Alta'].strftime('%d-%m-%Y')
-        if row['Baixa']:
-            row['Baixa'] = row['Baixa'].strftime('%d-%m-%Y')
-        if row['Data_Inici_activitat']:
-            row['Data_Inici_activitat'] = row['Data_Inici_activitat'].strftime('%d-%m-%Y')
-        if row['Data_modificacio']:
-            row['Data_modificacio'] = row['Data_modificacio'].strftime('%d-%m-%Y')
-
     return rows
 
 # Función para mostrar los datos en el Treeview
@@ -127,7 +119,7 @@ def cargar_en_formulario(event):
         entrada_dni.delete(0, tk.END)
         entrada_dni.insert(0, datos[1])
 
-        entrada_nom.delete(0, tk.END)
+        entrada_nom.delete(0 , tk.END)
         entrada_nom.insert(0, datos[2])
 
         entrada_carrer.delete(0, tk.END)
@@ -145,7 +137,9 @@ def cargar_en_formulario(event):
         entrada_email.delete(0, tk.END)
         entrada_email.insert(0, datos[7])
 
-        entrada_data_naixement.set_date(datetime.strptime(datos[8], '%d-%m-%Y'))  # Fecha de nacimiento
+        # Modificar aquí para usar format_date
+        entrada_data_naixement.delete(0, tk.END)
+        entrada_data_naixement.insert(0, format_date(datos[8]))  # Fecha de nacimiento
 
         entrada_telefon1.delete(0, tk.END)
         entrada_telefon1.insert(0, datos[9])  # Teléfono 1
@@ -163,37 +157,55 @@ def cargar_en_formulario(event):
         var_facial.set(datos[18] == 1)  # Facial
         var_en_ma.set(datos[19] == 1)  # En ma
 
-        cargar_activitats(datos[14])  # Activitats del socio seleccionado
+        # Clear previous activity selections
+        for index in range(checked_listbox.size()):
+            checked_listbox.selection_clear(index)
+
+        # Load activities for the selected member
+        actividades = cargar_activitats(datos[0])
+        for i in range(checked_listbox.size()):
+            actividad_nombre = checked_listbox.get(i)
+            if actividad_nombre.strip() in actividades:
+                checked_listbox.selection_set(i)
 
         entrada_quantitat.delete(0, tk.END)
         entrada_quantitat.insert(0, datos[15])  # Quantitat
         
-        entrada_data_alta.set_date(datetime.strptime(datos[16], '%d-%m-%Y'))  # Data d'Alta
+        entrada_data_alta.delete(0, tk.END)
+        entrada_data_alta.insert(0, format_date(datos[16]))  # Data d'Alta
 
-        entrada_data_baixa.set_date(datetime.strptime(datos[17], '%d-%m-%Y'))  # Data de Baixa
+        entrada_data_baixa.delete(0, tk.END)
+        # Solo formatear si datos[17] no es None
+        if datos[17] is not None:
+            entrada_data_baixa.insert(0, format_date(datos[17]))  # Data de Baixa
+        else:
+            entrada_data_baixa.insert(0, "")  # Dejar vacío si no hay fecha
 
-        entrada_data_inici_activitat.set_date(datetime.strptime(datos[19], '%d-%m-%Y'))  # Data d'Inici Activitat
+        entrada_data_inici_activitat.delete(0, tk.END)
+        entrada_data_inici_activitat.insert(0, format_date(datos[19]))  # Data d'Inici Activitat
 
         entrada_usuari.delete(0, tk.END)
         entrada_usuari.insert(0, datos[22])  # Usuari
 
         cargar_foto(datos[0])  # ID del socio seleccionado
-
+        
 # Función para cargar actividades
-def cargar_activitats(activitats):
-    for index in range(checked_listbox.size()):
-        checked_listbox.selection_clear(index)
+def cargar_activitats(id_socio):
+    # Retrieve activities for the specified member from the database
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT Activitats FROM socis WHERE ID = %s", (id_socio,))
+    actividades = cursor.fetchone()
+    conn.close()
 
-    if activitats:
-        activitats_seleccionadas = activitats.split(",")
-        for i in range(checked_listbox.size()):
-            actividad_nombre = checked_listbox.get(i)
-            if actividad_nombre.strip() in activitats_seleccionadas:
-                checked_listbox.selection_set(i)
+    if actividades and actividades[0]:
+        return actividades[0].split(",")
+    else:
+        return []
 
 # Crear una imagen en blanco para mostrar cuando no hay foto
 def crear_imagen_blanco():
-    imagen_blanco = Image.new("RGB", (100, 130), (255, 255 , 255))  # Color blanco
+    imagen_blanco = Image.new("RGB", (100, 130), (255, 255, 255))  # Color blanco
     return ImageTk.PhotoImage(imagen_blanco)
 
 # Función para cargar la foto
@@ -213,12 +225,22 @@ def cargar_foto(id_socio):
             label_foto.config(image=foto_tk)
             label_foto.image = foto_tk
         else:
-            # Cargar imagen en blanco si no hay foto
-            imagen_blanco = crear_imagen_blanco()
-            label_foto.config(image=imagen_blanco)
-            label_foto.image = imagen_blanco
+            # Cargar imagen predeterminada si no hay foto
+            cargar_imagen_predeterminada()
     except Exception as e:
         print(f"Error en cargar la foto: {e}")
+
+# Función para cargar la imagen predeterminada
+def cargar_imagen_predeterminada():
+    try:
+        # Asegúrate de que la ruta sea correcta
+        imagen_predeterminada = Image.open('logo/logo.jpg')
+        imagen_predeterminada = imagen_predeterminada.resize((100, 130), Image.Resampling.LANCZOS)
+        foto_tk = ImageTk.PhotoImage(imagen_predeterminada)
+        label_foto.config(image=foto_tk)
+        label_foto.image = foto_tk
+    except Exception as e:
+        print(f"Error al cargar la imagen predeterminada: {e}")
 
 # Variable global para almacenar el valor de búsqueda
 busqueda_actual = ""
@@ -231,16 +253,6 @@ def guardar_cambios():
 
     actividades_seleccionadas = [checked_listbox.get(i) for i in checked_listbox.curselection()]
     actividades_str = ",".join(actividades_seleccionadas)
-
-    # Convertir las fechas al formato yyyy-mm-dd
-    try:
-        fecha_naixement = entrada_data_naixement.get_date().strftime('%Y-%m-%d')
-        fecha_alta = entrada_data_alta.get_date().strftime('%Y-%m-%d')
-        fecha_baixa = entrada_data_baixa.get_date().strftime('%Y-%m-%d')
-        fecha_inici_activitat = entrada_data_inici_activitat.get_date().strftime('%Y-%m-%d')
-    except ValueError:
-        messagebox.showerror("Error", "Formato de fecha incorrecto. Usa el formato dd-mm-yyyy.")
-        return
 
     query = """UPDATE socis SET 
         DNI = %s, 
@@ -268,31 +280,42 @@ def guardar_cambios():
 
     id_socis = tree.item(tree.selection())['values'][0]
 
+    # Obtener el valor de "Baixa" y manejar el caso de "None"
+    baixa_value = entrada_data_baixa.get()  # Obtener el valor directamente
+
+    # Si el campo está vacío o contiene 'none', asignar None
+    if baixa_value == "" or baixa_value.lower() == "none":
+        baixa_value = None  # Asignar None para que se guarde como NULL en la base de datos
+    else:
+        # Convertir a formato yyyy-mm-dd
+        baixa_value = datetime.strptime(baixa_value, '%d-%m-%Y').strftime('%Y-%m-%d')
+
     if foto_ruta:
         foto_blob = obtener_foto_blob()
-        query += ", Foto = %s"
-        cursor.execute(query, (
+        cursor.execute(query + ", Foto = %s", (
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), fecha_naixement, entrada_telefon1.get(),
+            entrada_email.get(), entrada_data_naixement.get_date(), entrada_telefon1.get(),
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            fecha_alta, fecha_baixa, fecha_inici_activitat, entrada_usuari.get(), id_socis, foto_blob
+            entrada_data_alta.get_date(), baixa_value, entrada_data_inici_activitat.get_date(), entrada_usuari.get(), id_socis, foto_blob
         ))
     else:
         cursor.execute(query, (
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), fecha_naixement, entrada_telefon1.get(),
+            entrada_email.get(), entrada_data_naixement.get_date(), entrada_telefon1.get(),
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            fecha_alta, fecha_baixa, fecha_inici_activitat, entrada_usuari.get(), id_socis
+            entrada_data_alta.get_date(), baixa_value, entrada_data_inici_activitat.get_date(), entrada_usuari.get(), id_socis
         ))
 
     conn.commit()
     conn.close()
 
     messagebox.showinfo("Éxit", "Dades actualizades correctament.")
+
+    # Mostrar los datos filtrados después de guardar
     mostrar_datos(busqueda_actual)
 
 # Función para obtener el BLOB de la foto
@@ -407,7 +430,8 @@ tree = ttk.Treeview(frame_tree, columns=("ID", "DNI", "Nom", "Carrer", "Codipost
                                          "Poblacio", "Provincia", "Email", "Data_naixement",
                                          "Telefon1", "Telefon2", "Telefon3", "Numero_Conta",
                                          "Sepa", "Activitats", "Quantitat", "Alta", "Baixa",
-                                         "Facial", "Data_Inici_activitat", "En_ma", "Data_modificacio"), show='headings')
+                                         "Facial", "Data_Inici_activitat", "En_ma", "Data_modificacio"), 
+                                         show='headings')
 
 # Configurar columnas del Treeview
 for col in tree["columns"]:
@@ -476,7 +500,7 @@ entrada_email = tk.Entry(frame_formulario, width=35)
 entrada_email.grid(row=6, column=1)
 
 tk.Label(frame_formulario, text="Data de naixement").grid(row=7, column=0)
-entrada_data_naixement = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
+entrada_data_naixement = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')
 entrada_data_naixement.grid(row=7, column=1)
 
 tk.Label(frame_formulario, text="Telefon1").grid(row=8, column=0)
@@ -493,10 +517,10 @@ entrada_telefon3.grid(row=10, column=1)
 
 tk.Label(frame_formulario, text="Numero Conta").grid(row=11, column=0)
 entrada_numero_conta = tk.Entry(frame_formulario, width=35)
-entrada_numero_conta.grid(row=11, column=1)
+entrada_numero_conta.grid(row=11, column= 1)
 
 var_sepa = tk.BooleanVar()
-tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=13 , column=0)
+tk.Checkbutton(frame_formulario, text="SEPA", variable=var_sepa).grid(row=13, column=0)
 
 var_facial = tk.BooleanVar()
 tk.Checkbutton(frame_formulario, text="Facial", variable=var_facial).grid(row=14, column=0)
@@ -525,15 +549,15 @@ entrada_quantitat = tk.Entry(frame_formulario, width=35)
 entrada_quantitat.grid(row=19, column=1)
 
 tk.Label(frame_formulario, text="Data d'Alta").grid(row=20, column=0)
-entrada_data_alta = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
+entrada_data_alta = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')
 entrada_data_alta.grid(row=20, column=1)
 
 tk.Label(frame_formulario, text="Data de Baixa").grid(row=21, column=0)
-entrada_data_baixa = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
+entrada_data_baixa = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')
 entrada_data_baixa.grid(row=21, column=1)
 
 tk.Label(frame_formulario, text="Data d'Inici Activitat").grid(row=22, column=0)
-entrada_data_inici_activitat = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')  # Usar DateEntry
+entrada_data_inici_activitat = DateEntry(frame_formulario, width=35, date_pattern='dd-mm-yyyy')
 entrada_data_inici_activitat.grid(row=22, column=1)
 
 # Campo de usuario
@@ -544,6 +568,7 @@ entrada_usuari.grid(row=23, column=1)
 # Label para foto
 label_foto = tk.Label(frame_formulario, width=100, height=130)  # Establecer un tamaño fijo
 label_foto.place(x=350, y=0)  # Coloca el label en las coordenadas x=350, y=0
+
 
 btn_cargar_foto = tk.Button(frame_formulario, text="Carregar Foto", command=cargar_nueva_foto)
 btn_cargar_foto.grid(row=14, column=2)
