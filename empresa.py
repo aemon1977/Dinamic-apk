@@ -217,16 +217,21 @@ create_database()
 # Obtener los datos existentes y llenar los campos
 data = fetch_data()
 if data:
-    entry_nom.insert(0, data[1])
-    entry_adresa.insert(0, data[2])
-    entry_poblocio.insert(0, data[3])
-    entry_provincia.insert(0, data[4])
-    entry_codi_postal.insert(0, data[5])
-    entry_telefon.insert(0, data[6])
-    entry_mobil.insert(0, data[7])
-    entry_email.insert(0, data[8])
-    entry_pagina_web.insert(0, data[9])
-    entry_cif_nif.insert(0, data[10])
+    if len(data) >= 11:  # Asegúrate de que hay suficientes elementos
+        entry_nom.insert(0, data[1] if data[1] is not None else "")
+        entry_adresa.insert(0, data[2] if data[2] is not None else "")
+        entry_poblacio.insert(0, data[3] if data[3] is not None else "")
+        entry_provincia.insert(0, data[4] if data[4] is not None else "")
+        entry_codi_postal.insert(0, data[5] if data[5] is not None else "")
+        entry_telefon.insert(0, data[6] if data[6] is not None else "")
+        entry_mobil.insert(0, data[7] if data[7] is not None else "")
+        entry_email.insert(0, data[8] if data[8] is not None else "")
+        entry_pagina_web.insert(0, data[9] if data[9] is not None else "")
+        entry_cif_nif.insert(0, data[10] if data[10] is not None else "")
+    else:
+        messagebox.showwarning("Advertencia", "No hay suficientes datos en la base de datos.")
+else:
+    messagebox.showinfo("Información", "No se encontraron registros en la base de datos.")
 
 show_logo_preview()
 

@@ -12,3 +12,8 @@ error: 'Can't connect to MySQL server on 'localhost:3306' (10061)'
 Check that mysqld is running on localhost and that the port is 3306.
 You can check this by doing 'telnet localhost 3306'
 
+2024-12-04 15:45:20,160 - ERROR - Failed to shut down MySQL service: mysqladmin: connect to server at 'localhost' failed
+error: 'Authentication plugin 'mysql_native_password' cannot be loaded: No se puede encontrar el módulo especificado.
+
+'
+

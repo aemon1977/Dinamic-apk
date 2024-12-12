@@ -29,6 +29,10 @@ def read_current_version():
     except FileNotFoundError:
         return "0.0.0"  # Valor por defecto si no se encuentra el archivo
 
+def run_facturacio():
+    subprocess.Popen(["python", os.path.join("comptabilitat", "facturacio.py")])  # Ejecutar facturacio.py
+
+
 # Función para verificar actualizaciones
 def check_for_updates():
     current_version = read_current_version()  # Leer la versión desde el archivo
@@ -53,30 +57,11 @@ def show_update_notification(latest_version, release_url):
 check_for_updates()
 
 # Configure logging
-logging.basicConfig(filename='mysql_shutdown.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
 
-def tancar_servici_mysql():
-    try:
-        # Absolute path to mysqladmin
-        mysqladmin_path = r"\Dinamic\mysql\bin\mysqladmin.exe"
-        
-        # Command to shut down MySQL service
-        command = [mysqladmin_path, '-u', 'root', 'shutdown']
-        
-        # Execute the command
-        result = subprocess.run(command, capture_output=True, text=True)
-        
-        # Log the output
-        if result.returncode == 0:
-            logging.info("MySQL service shut down successfully.")
-        else:
-            logging.error(f"Failed to shut down MySQL service: {result.stderr}")
-    except Exception as e:
-        logging.error(f"Error shutting down MySQL service: {str(e)}")
 
 def sortir():
     if messagebox.askokcancel("Sortir", "Vols sortir de l'aplicació?"):
-        tancar_servici_mysql()  # Shut down the MySQL service
+       
         root.destroy()  # Close the GUI window
 
 def al_tancar():
@@ -248,6 +233,12 @@ def run_llistatsocise():
 def run_contabilitat():
     subprocess.Popen(["python", os.path.join("comptabilitat", "comptabilitatesporadics.py")])  # Ejecutar fitxa.py
 
+# Función para ejecutar facturar.py en la carpeta 'comptabilitat'
+def run_facturar():
+    subprocess.Popen(["python", os.path.join("comptabilitat", "facturar.py")])  # Ejecutar fitxa.py
+
+# Ejecutar facturacio.py al inicio
+run_facturacio()
 
 # Configuración de la ventana principal
 root = tk.Tk()
@@ -299,7 +290,8 @@ menu_bar.add_cascade(label="Esporádics", menu=esporadics_menu)
 
 # Menú de Comptabilitat
 Comptabilitat_menu = tk.Menu(menu_bar, tearoff=0)
-Comptabilitat_menu.add_command(label="Comptabilitat", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
+Comptabilitat_menu.add_command(label="Comptabilitat Esporadics", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
+Comptabilitat_menu.add_command(label="Factures", command=run_facturar) # Cambiado para ejecutar Facturar.py
 menu_bar.add_cascade(label="Comptabilitat", menu=Comptabilitat_menu)
 
 # Add "Sortir" menu item directly to the menu bar

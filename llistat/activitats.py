@@ -32,19 +32,48 @@ def agregar_actividad():
     else:
         messagebox.showwarning("Avís", "El camp de nom és obligatori.")
 
-# Función para eliminar una actividad
- 
+# Función para eliminar una actividad de la tabla 'activitats' y de la columna 'activitats' de la tabla 'socis'
 def eliminar_actividad(id_activitat):
     if id_activitat and messagebox.askyesno("Confirmació", "Estàs segur que vols eliminar aquesta activitat?"):
         try:
+            # Primero, eliminar la actividad de todos los socios
             conn = connect_db()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM activitats WHERE id = %s", (id_activitat,))
-            conn.commit()
-            conn.close()
-            cargar_activitats()  # Actualizar la lista después de eliminar
+
+            # Obtener el nombre de la actividad por su ID
+            cursor.execute("SELECT nom FROM activitats WHERE id = %s", (id_activitat,))
+            actividad_nombre = cursor.fetchone()
+            if actividad_nombre:
+                actividad_nombre = actividad_nombre[0]
+
+                # Actualizar la columna 'activitats' de los socios, eliminando la actividad seleccionada
+                cursor.execute("""
+                    UPDATE socis
+                    SET activitats = REPLACE(activitats, %s, '')
+                    WHERE FIND_IN_SET(%s, activitats) > 0
+                """, (actividad_nombre, actividad_nombre))
+
+                # Limpiar las comas sobrantes si la actividad está al principio o al final de la lista
+                cursor.execute("""
+                    UPDATE socis
+                    SET activitats = TRIM(BOTH ',' FROM activitats)
+                    WHERE FIND_IN_SET(%s, activitats) > 0
+                """, (actividad_nombre,))
+
+                conn.commit()
+
+                # Luego eliminar la actividad de la tabla 'activitats'
+                cursor.execute("DELETE FROM activitats WHERE id = %s", (id_activitat,))
+                conn.commit()
+
+                conn.close()
+                cargar_activitats()  # Actualizar la lista después de eliminar
+                messagebox.showinfo("Èxit", "Activitat eliminada amb èxit.")
+            else:
+                messagebox.showerror("Error", "Activitat no trobada.")
         except mysql.connector.Error as err:
-            pass  # No mostrar ningún mensaje de error
+            messagebox.showerror("Error", f"Error al eliminar la activitat: {err}")
+
 # Función para cargar actividades en la tabla
 def cargar_activitats():
     for item in tree.get_children():
