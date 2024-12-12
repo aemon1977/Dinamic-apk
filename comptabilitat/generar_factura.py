@@ -214,16 +214,11 @@ def generar_pdf(numero_factura, cliente_id):
 # Ejecución principal
 if __name__ == "__main__":
     import sys
-    # Verifica si se pasa un número de factura como argumento
-    if len(sys.argv) > 1:
-        numero_factura = sys.argv[1]
-    else:
-        numero_factura = "2024-001"  # Número de factura predeterminado para pruebas
+    if len(sys.argv) < 3:
+        print("Uso: python script.py <numero_factura> <cliente_id>")
+        sys.exit(1)
 
-    # Verifica si se pasa un ID de cliente
-    if len(sys.argv) > 2:
-        cliente_id = sys.argv[2]
-    else:
-        cliente_id = 1  # Cliente de prueba
+    numero_factura = sys.argv[1]
+    cliente_id = int(sys.argv[2])
 
     generar_pdf(numero_factura, cliente_id)

@@ -22,7 +22,7 @@ def obtenir_factures(filtro_mes=None, filtro_anio=None, tipo_cliente="Ambos"):
 
     # Consulta SQL base
     query = """
-        SELECT f.numero_factura, s.Nom as client, f.total, f.fecha
+        SELECT f.numero_factura, s.ID as cliente_id, s.Nom as client, f.total, f.fecha
         FROM facturas f
         JOIN socis s ON f.cliente_id = s.ID
     """
@@ -80,7 +80,7 @@ def actualitzar_taula():
     # Agregar las nuevas filas a la tabla
     total_facturat = 0
     for factura in factures:
-        tabla.insert("", "end", values=(factura['numero_factura'], factura['client'], factura['total'], factura['fecha']))
+        tabla.insert("", "end", values=(factura['numero_factura'], factura['cliente_id'], factura['client'], factura['total'], factura['fecha']))
         total_facturat += factura['total']
 
     # Mostrar el total facturado
@@ -96,8 +96,8 @@ def generar_factura_rectificativa():
     # Obtener los datos de la factura seleccionada
     factura = tabla.item(selected_item, "values")
     numero_factura = factura[0]
-    client = factura[1]
-    total = factura[2]  # Aquí es donde obtenemos el total como cadena
+    client_id = factura[1]  # Obtener el cliente_id
+    total = factura[3]  # Aquí es donde obtenemos el total como cadena
 
     # Convertir el total a un número (float) para poder invertirlo
     try:
@@ -176,15 +176,16 @@ def abrir_factura_pdf():
         messagebox.showerror("Error", "Heu de seleccionar una factura per obrir el PDF.")
         return
 
-    # Obtener el número de factura
+    # Obtener el número de factura y cliente_id
     factura = tabla.item(selected_item, "values")
     numero_factura = factura[0]
+    cliente_id = factura[1]  # Obtener el cliente_id
 
-    # Construir la ruta del script y pasar el número de factura como argumento
+    # Construir la ruta del script y pasar el número de factura y cliente_id como argumentos
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(current_dir, 'generar_factura.py')
-        subprocess.run([sys.executable, script_path, numero_factura], check=True)
+        subprocess.run([sys.executable, script_path, numero_factura, str(cliente_id)], check=True)
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Error al ejecutar generar_factura.py: {e}")
     except FileNotFoundError:
@@ -238,8 +239,9 @@ actualizar_button.grid(row=1, column=2, padx=10)
 tabla_frame = tk.Frame(ventana)
 tabla_frame.pack(pady=20)
 
-tabla = ttk.Treeview(tabla_frame, columns=("numero_factura", "cliente", "total", "fecha"), show="headings")
+tabla = ttk.Treeview(tabla_frame, columns=("numero_factura", "cliente_id", "cliente", "total", "fecha"), show="headings")
 tabla.heading("numero_factura", text="Número Factura")
+tabla.heading("cliente_id", text="Cliente ID")
 tabla.heading("cliente", text="Client")
 tabla.heading("total", text="Total")
 tabla.heading("fecha", text="Fecha")

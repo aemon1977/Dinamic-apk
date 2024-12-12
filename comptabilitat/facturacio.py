@@ -10,7 +10,7 @@ def connect_db():
         database="gimnas"
     )
 
-# Crear la tabla 'facturas' si no existe y agregar la columna 'dia_proxima_factura'
+# Crear la tabla 'facturas' si no existe
 def crear_tabla_facturas():
     conn = connect_db()
     cursor = conn.cursor()
@@ -26,14 +26,14 @@ def crear_tabla_facturas():
             impuesto DECIMAL(10,2),
             fecha DATE NOT NULL,
             numero_factura VARCHAR(20) NOT NULL,
-            dia_proxima_factura DATE NOT NULL  -- Nueva columna para la próxima factura
+            dia_proxima_factura DATE NOT NULL
         )
     """)
-    print("Tabla 'facturas' verificada o creada correctamente.")
+    print("Tabla 'facturas' creada/verificada correctamente.")
     cursor.close()
     conn.close()
 
-# Obtener el último número de factura por año
+# Obtener el último número de factura del año actual
 def get_last_invoice_number():
     conn = connect_db()
     cursor = conn.cursor()
@@ -47,48 +47,36 @@ def get_last_invoice_number():
     cursor.close()
     conn.close()
     if result[0]:
-        last_invoice = result[0]
-        return int(last_invoice.split('-')[1])  # Obtener el número sin el año
+        return int(result[0].split('-')[1])  # Extrae el número después del guion
     return 0
 
-# Obtener la fecha de la última factura
+# Obtener la última fecha de factura de un cliente
 def obtener_fecha_ultima_factura(cliente_id):
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT MAX(fecha) 
-        FROM facturas 
-        WHERE cliente_id = %s
+        SELECT MAX(fecha) FROM facturas WHERE cliente_id = %s
     """, (cliente_id,))
     result = cursor.fetchone()[0]
     cursor.close()
     conn.close()
-    return result  # Si no hay factura, devuelve None
+    return result
 
-# Verificar si el socio ya ha sido facturado este mes
-def ya_facturado_mes(cliente_id, tipo_cliente, mes, anio):
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT COUNT(*) FROM facturas
-        WHERE cliente_id = %s AND tipo_cliente = %s
-        AND MONTH(fecha) = %s AND YEAR(fecha) = %s
-    """, (cliente_id, tipo_cliente, mes, anio))
-    result = cursor.fetchone()[0]
-    cursor.close()
-    conn.close()
-    return result > 0
-
-# Generar factura automáticamente
+# Generar facturas pendientes para los socios
 def facturar_socis():
     conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     last_invoice_number = get_last_invoice_number()
     hoy = datetime.now().date()
-    current_year = hoy.year
-    primer_dia_mes = hoy.replace(day=1)  # Primer día del mes actual
 
-    # Seleccionar los socios con actividades y sin baja definitiva
+    # Verificar que solo se facturen a partir del mes actual (primer día del mes)
+    primer_dia_mes_actual = datetime(hoy.year, hoy.month, 1).date()
+
+    if hoy < primer_dia_mes_actual:
+        print("No se generarán facturas antes del primer día del mes actual.")
+        return  # Salir si hoy es antes del primer día del mes actual
+
+    # Obtener socios activos
     cursor.execute("""
         SELECT ID, Nom, Activitats, Quantitat, Alta, Baixa
         FROM socis
@@ -102,50 +90,50 @@ def facturar_socis():
         activitats = socio['Activitats']
         quantitat = float(socio['Quantitat'])
         alta = socio['Alta']
-        baixa = socio['Baixa']
 
-        # Obtener la fecha de la última factura
+        # Convertir 'alta' a fecha si no es None
+        if alta is None:
+            print(f"Error: La fecha de alta de {nom} es None.")
+            continue  # Saltar este socio si no tiene fecha de alta válida
+
+        if isinstance(alta, str):
+            alta = datetime.strptime(alta, '%Y-%m-%d').date()  # Convertir a datetime.date si es string
+
+        # Determinar la fecha de inicio para facturación
         fecha_ultima_factura = obtener_fecha_ultima_factura(cliente_id)
-
-        # Si no hay una factura previa, usar la fecha de alta del socio
-        if fecha_ultima_factura is None:
-            # Si no existe fecha de factura previa, asignamos la fecha de alta para la primera factura
-            fecha_ultima_factura = alta
-            print(f"No se encontró factura previa para {nom}, usando la fecha de alta {alta} como referencia.")
         
-        # Verificar si fecha_ultima_factura tiene valor
+        # Si no existe fecha de última factura, usar la fecha de alta
         if fecha_ultima_factura is None:
-            print(f"No se puede calcular la fecha de la próxima factura para {nom} porque la fecha de la última factura es None.")
-            continue
+            fecha_actual = alta
+        else:
+            fecha_actual = fecha_ultima_factura
 
-        # Calcular la diferencia en días entre el primer día de este mes y la fecha de alta
-        dias_diferencia = (primer_dia_mes - alta).days
-        
-        # Verificar si la diferencia de días es un múltiplo de 30
-        if dias_diferencia % 30 == 0:
-            # Generar factura solo si es un múltiplo de 30 desde el primer día del mes
-            # Calcular la fecha de la próxima factura
-            fecha_proxima_factura = hoy
+        # Verificar que la fecha_actual esté en el mes actual o posterior
+        if fecha_actual < primer_dia_mes_actual:
+            fecha_actual = primer_dia_mes_actual  # Si la última factura fue antes del mes actual, empezamos desde el primer día de este mes
 
-            # Verificar si ya fue facturado este mes
-            if ya_facturado_mes(cliente_id, 'socis', fecha_proxima_factura.month, fecha_proxima_factura.year):
-                print(f"El socio {nom} ya fue facturado en el mes de {fecha_proxima_factura.strftime('%Y-%m')}.")
-                continue
+        # Recorrer desde la última factura hasta hoy, en intervalos de 30 días
+        while fecha_actual <= hoy:
+            if fecha_actual != fecha_ultima_factura:  # Evitar repetir la última factura existente
+                # Calcular desglose de precios
+                iva = round(quantitat * 0.21, 2)
+                preu = round(quantitat - iva, 2)
+                total = quantitat
+                last_invoice_number += 1
+                numero_factura = f"{hoy.year}-{last_invoice_number:03d}"
 
-            # Calcular desglose de precios
-            iva = round(quantitat * 0.21, 2)
-            preu = round(quantitat - iva, 2)
-            total = quantitat
-            last_invoice_number += 1
-            numero_factura = f"{current_year}-{last_invoice_number:03d}"  # Formato de factura
+                # Corregir la fecha de la próxima factura (asegurarse de que no sea antes de hoy)
+                dia_proxima_factura = max(fecha_actual + timedelta(days=30), hoy)
 
-            # Insertar la factura con la fecha de la próxima factura
-            cursor.execute("""
-                INSERT INTO facturas (cliente_id, tipo_cliente, activitats, Preu, iva, total, impuesto, fecha, numero_factura, dia_proxima_factura)
-                VALUES (%s, 'socis', %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (cliente_id, activitats, preu, iva, total, iva, fecha_proxima_factura, numero_factura, fecha_proxima_factura))
+                # Insertar la factura en la base de datos
+                cursor.execute("""
+                    INSERT INTO facturas (cliente_id, tipo_cliente, activitats, Preu, iva, total, impuesto, fecha, numero_factura, dia_proxima_factura)
+                    VALUES (%s, 'socis', %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (cliente_id, activitats, preu, iva, total, iva, fecha_actual, numero_factura, dia_proxima_factura))
+                print(f"Factura generada para {nom}: {numero_factura}, Fecha: {fecha_actual}, Proxima factura: {dia_proxima_factura}")
 
-            print(f"Factura generada para {nom} - Número de factura: {numero_factura} - Próxima factura el {fecha_proxima_factura}")
+            # Sumar 30 días para la próxima factura
+            fecha_actual += timedelta(days=30)
 
     conn.commit()
     cursor.close()
@@ -153,5 +141,5 @@ def facturar_socis():
 
 # Ejecutar el script
 if __name__ == "__main__":
-    crear_tabla_facturas()  # Verificar y crear la tabla si no existe
-    facturar_socis()        # Generar facturas automáticamente
+    crear_tabla_facturas()
+    facturar_socis()
