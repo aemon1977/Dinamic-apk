@@ -412,6 +412,11 @@ entrada_busqueda.bind("<KeyRelease>", buscar)
 btn_buscar = tk.Button(frame_left, text="Buscar", command=buscar)
 btn_buscar.pack()
 
+# Nuevo botón para recargar la tabla
+
+btn_recargar = tk.Button(frame_left, text="Actualitzar", command=mostrar_datos)
+btn_recargar.pack(pady=5)  # Añadir un poco de espacio vertical
+
 # Crear un Frame para contener el Treeview
 frame_tree = tk.Frame(frame_left)
 frame_tree.pack()
