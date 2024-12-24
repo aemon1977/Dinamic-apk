@@ -10,6 +10,42 @@ import requests
 import logging
 import threading
 
+# Función para actualizar el contenido del formulario
+def actualizar_contenido():
+    try:
+        # Obtener datos actualizados
+        esporadics, birthdays, total_socis, socis_actius, total_quantitat_socis, total_quantitat_esporadics = get_data()
+        
+        # Limpiar tablas existentes
+        for row in tree_esporadics.get_children():
+            tree_esporadics.delete(row)
+        for row in tree_birthdays.get_children():
+            tree_birthdays.delete(row)
+        
+        # Rellenar tabla de esporádicos
+        for esporadic in esporadics:
+            tree_esporadics.insert("", "end", values=(
+                esporadic['Nom'], esporadic['Telefon1'], esporadic['Dies_Fins_Baixa']
+            ))
+        
+        # Rellenar tabla de cumpleaños
+        for birthday in birthdays:
+            tree_birthdays.insert("", "end", values=(
+                birthday['Nom'], birthday['Telefon1'], birthday['Activitats'], birthday['Dies_Fins_Aniversari']
+            ))
+        
+        # Actualizar totales
+        label_totals.config(
+            text=f"Total de Socis: {total_socis}\n"
+                 f"Socis actius: {socis_actius}\n"
+                 f"Quantitat Total (Socis): {total_quantitat_socis}\n"
+                 f"Quantitat Total (Esporàdics): {total_quantitat_esporadics}"
+        )
+        
+    except Exception as e:
+        logging.error(f"Error al actualizar el contenido: {e}")
+        messagebox.showerror("Error", "Hubo un problema al actualizar el contenido.")
+
 # Configuración del logger
 logging.basicConfig(
     filename="app_error.log",  # Nombre del archivo donde se guardarán los logs
@@ -293,6 +329,9 @@ Comptabilitat_menu = tk.Menu(menu_bar, tearoff=0)
 Comptabilitat_menu.add_command(label="Comptabilitat Esporadics", command=run_contabilitat) # Cambiado para ejecutar contabilitat.py
 Comptabilitat_menu.add_command(label="Factures", command=run_facturar) # Cambiado para ejecutar Facturar.py
 menu_bar.add_cascade(label="Comptabilitat", menu=Comptabilitat_menu)
+
+# Añadir menú para recargar formulario
+menu_bar.add_command(label="Actualitza contingut", command=actualizar_contenido)
 
 # Add "Sortir" menu item directly to the menu bar
 menu_bar.add_command(label="Sortir", command=sortir)
