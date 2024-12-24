@@ -249,6 +249,7 @@ class GymManagementSystem:
             conn = mysql.connector.connect(**self.db_config)
             cursor = conn.cursor()
 
+    # Asegúrate de que todos los valores sean válidos
             if not dni:
                 cursor.execute("SELECT id FROM esporadics ORDER BY id DESC LIMIT 1")
                 last_id = cursor.fetchone()
@@ -261,10 +262,12 @@ class GymManagementSystem:
             query = """
                 INSERT INTO esporadics (dni, nom, carrer, codipostal, poblacio, provincia, email, data_naixement, telefon1, telefon2, telefon3,
                 numero_conta, sepa, quantitat, alta, baixa, facial, Data_Inici_activitat, usuari, foto, activitats)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (dni, nom, carrer, cp, poblacio, provincia, email, data_naixement, telefon1, telefon2, telefon3,
                       compte, sepa, quantitat, alta, baixa, facial, data_inici, usuari, self.photo_data, activities_str)
+
+            print("Valores a insertar:", values)  # Para depuración
             cursor.execute(query, values)
 
             conn.commit()
@@ -274,7 +277,8 @@ class GymManagementSystem:
             conn.close()
 
         except mysql.connector.Error as err:
-            messagebox.showerror("Error de base de dades", f"Error al inserir el soci: {err}")
+            messagebox.showerror("Error de base de dades", f"Error al inserir el soci: {err }")
+
 
     def convert_date(self, date_str):
         try:
