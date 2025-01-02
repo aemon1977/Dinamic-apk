@@ -1,0 +1,29 @@
+2024-12-02 10:38:41,302:DEBUG:Building SSL context
+2024-12-02 10:38:41,336:DEBUG:Switching to SSL
+2024-12-02 10:38:41,341:DEBUG:SSL has been enabled
+2024-12-02 10:38:41,341:DEBUG:Starting authorization phase
+2024-12-02 10:38:41,341:DEBUG:The provided initial strategy is caching_sha2_password
+2024-12-02 10:38:41,341:INFO:package: mysql.connector.plugins
+2024-12-02 10:38:41,341:INFO:plugin_name: caching_sha2_password
+2024-12-02 10:38:41,341:INFO:AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2024-12-02 10:38:41,342:DEBUG:caching_sha2_password completed succesfully
+2024-12-02 10:40:59,510:DEBUG:Building SSL context
+2024-12-02 10:40:59,540:DEBUG:Switching to SSL
+2024-12-02 10:40:59,545:DEBUG:SSL has been enabled
+2024-12-02 10:40:59,545:DEBUG:Starting authorization phase
+2024-12-02 10:40:59,545:DEBUG:The provided initial strategy is caching_sha2_password
+2024-12-02 10:40:59,545:INFO:package: mysql.connector.plugins
+2024-12-02 10:40:59,545:INFO:plugin_name: caching_sha2_password
+2024-12-02 10:40:59,546:INFO:AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2024-12-02 10:40:59,546:DEBUG:caching_sha2_password completed succesfully
+2024-12-02 10:41:04,893:INFO:MySQL service shut down successfully.
+2024-12-02 10:43:18,312:DEBUG:Building SSL context
+2024-12-02 10:43:18,346:DEBUG:Switching to SSL
+2024-12-02 10:43:18,351:DEBUG:SSL has been enabled
+2024-12-02 10:43:18,351:DEBUG:Starting authorization phase
+2024-12-02 10:43:18,352:DEBUG:The provided initial strategy is caching_sha2_password
+2024-12-02 10:43:18,352:INFO:package: mysql.connector.plugins
+2024-12-02 10:43:18,352:INFO:plugin_name: caching_sha2_password
+2024-12-02 10:43:18,352:INFO:AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2024-12-02 10:43:18,352:DEBUG:caching_sha2_password completed succesfully
+2024-12-02 10:43:41,376:INFO:MySQL service shut down successfully.
