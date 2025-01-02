@@ -12,47 +12,47 @@ def conectar_bd():
         database="gimnas"
     )
 
-def buscar_clientes():
-    criterio = entrada_busqueda.get()
+def buscar_clientes(event=None):  # Añadido el parámetro event
+    criteri = entrada_busqueda.get()
     query = """
         SELECT ID, DNI, Nom, Activitats 
         FROM socis 
         WHERE Activitats IS NOT NULL AND (DNI LIKE %s OR Nom LIKE %s)
     """
-    valores = (f"%{criterio}%", f"%{criterio}%")
+    valors = (f"%{criteri}%", f"%{criteri}%")
     conexion = conectar_bd()
     cursor = conexion.cursor()
-    cursor.execute(query, valores)
-    resultados = cursor.fetchall()
+    cursor.execute(query, valors)
+    resultats = cursor.fetchall()
     conexion.close()
 
     for row in tabla_busqueda.get_children():
         tabla_busqueda.delete(row)
 
-    for resultado in resultados:
-        tabla_busqueda.insert("", "end", values=resultado)
+    for resultat in resultats:
+        tabla_busqueda.insert("", "end", values=resultat)
 
-def pasar_a_seleccion():
+def passar_a_seleccio():
     for item in tabla_busqueda.selection():
-        valores = tabla_busqueda.item(item, "values")
-        if not any(valores[0] == seleccion.item(child, "values")[0] for child in seleccion.get_children()):
-            seleccion.insert("", "end", values=valores)
-        tabla_busqueda.delete(item)  # Eliminar de la tabla de búsqueda
+        valors = tabla_busqueda.item(item, "values")
+        if not any(valors[0] == seleccio.item(child, "values")[0] for child in seleccio.get_children()):
+            seleccio.insert("", "end", values=valors)
+        tabla_busqueda.delete(item)  # Eliminar de la taula de cerca
 
-def quitar_de_seleccion():
-    for item in seleccion.selection():
-        valores = seleccion.item(item, "values")
-        tabla_busqueda.insert("", "end", values=valores)  # Devolver a la tabla de búsqueda
-        seleccion.delete(item)  # Eliminar de la tabla de selección
+def treure_de_seleccio():
+    for item in seleccio.selection():
+        valors = seleccio.item(item, "values")
+        tabla_busqueda.insert("", "end", values=valors)  # Retornar a la taula de cerca
+        seleccio.delete(item)  # Eliminar de la taula de selecció
 
-def realizar_bajas():
-    confirmacion = messagebox.askyesno("Confirmar", "¿Estás seguro de realizar las bajas seleccionadas?")
-    if not confirmacion:
+def realitzar_baixes():
+    confirmacio = messagebox.askyesno("Confirmar", "Estàs segur de realitzar les baixes seleccionades?")
+    if not confirmacio:
         return
 
-    ids_seleccionados = [seleccion.item(item, "values")[0] for item in seleccion.get_children()]
-    if not ids_seleccionados:
-        messagebox.showwarning("Advertencia", "No has seleccionado ningún cliente.")
+    ids_seleccionats = [seleccio.item(item, "values")[0] for item in seleccio.get_children()]
+    if not ids_seleccionats:
+        messagebox.showwarning("Advertència", "No has seleccionat cap client.")
         return
 
     query = """
@@ -62,52 +62,64 @@ def realizar_bajas():
     """
     conexion = conectar_bd()
     cursor = conexion.cursor()
-    fecha_hoy = date.today().strftime("%Y-%m-%d")
+    data_avui = date.today().strftime("%Y-%m-%d")
 
-    for id_cliente in ids_seleccionados:
-        cursor.execute(query, (fecha_hoy, id_cliente))
+    for id_client in ids_seleccionats:
+        cursor.execute(query, (data_avui, id_client))
 
     conexion.commit()
     conexion.close()
 
-    messagebox.showinfo("Èxit", "Les baixes es van realitzar correctament.")
+    messagebox.showinfo("Èxit", "Les baixes s'han realitzat correctament.")
     buscar_clientes()
-    for row in seleccion.get_children():
-        seleccion.delete(row)
+    for row in seleccio.get_children():
+        seleccio.delete(row)
 
-# Función para ordenar tabla
-def ordenar_tabla(tabla, columna):
-    datos = [(tabla.set(item, columna), item) for item in tabla.get_children('')]
-    datos_ordenados = sorted(datos, key=lambda t: t[0])
-    for index, (_, item) in enumerate(datos_ordenados):
-        tabla.move(item, '', index)
-    tabla.heading(columna, command=lambda: ordenar_tabla(tabla, columna))
+# Funció per ordenar taula
+def ordenar_taula(taula, columna):
+    dades = [(taula.set(item, columna), item) for item in taula.get_children('')]
+    dades_ordenades = sorted(dades, key=lambda t: t[0])
+    for index, (_, item) in enumerate(dades_ordenades):
+        taula.move(item, '', index)
+    taula.heading(columna, command=lambda: ordenar_taula(taula, columna))
 
-# Configuración de la ventana principal
+# Funció per manejar el doble clic
+def on_double_click_busqueda(event):
+    passar_a_seleccio()
+
+def on_double_click_seleccio(event):
+    treure_de_seleccio()
+
+# Configuració de la finestra principal
 ventana = tk.Tk()
-ventana.title("Baixa Clients")
+ventana.title("Donar de Baixa Clients")
 ventana.geometry("800x600")
 
 frame_busqueda = tk.Frame(ventana)
 frame_busqueda.pack(fill="x", padx=10, pady=5)
 
-etiqueta_busqueda = tk.Label(frame_busqueda, text="Buscar:")
+etiqueta_busqueda = tk.Label(frame_busqueda, text="Cercar:")
 etiqueta_busqueda.pack(side="left")
 
 entrada_busqueda = tk.Entry(frame_busqueda)
 entrada_busqueda.pack(side="left", fill="x", expand=True, padx=5)
 
-boton_buscar = tk.Button(frame_busqueda, text="Buscar", command=buscar_clientes)
-boton_buscar.pack(side="left")
+# Vincular el evento de entrada para buscar automáticamente
+entrada_busqueda.bind("<KeyRelease>", buscar_clientes)
 
 frame_tablas = tk.Frame(ventana)
 frame_tablas.pack(fill="both", expand=True, padx=10, pady=5)
 
-# Tabla de búsqueda
-tabla_busqueda = ttk.Treeview(frame_tablas, columns=("ID", "DNI", "Nom", "Activitats"), show="headings")
-for col in ("ID", "DNI", "Nom", "Activitats"):
-    tabla_busqueda.heading(col, text=col, command=lambda c=col: ordenar_tabla(tabla_busqueda, c))
-    tabla_busqueda.column(col, width=100)
+# Taula de cerca
+tabla_busqueda = ttk.Treeview(frame_tablas, columns =("ID", "DNI", "Nom", "Activitats"), show="headings")
+tabla_busqueda.heading("ID", text="ID")
+tabla_busqueda.heading("DNI", text="DNI", command=lambda: ordenar_taula(tabla_busqueda, "DNI"))
+tabla_busqueda.heading("Nom", text="Nom ", command=lambda: ordenar_taula(tabla_busqueda, "Nom"))
+tabla_busqueda.heading("Activitats", text="Activitats", command=lambda: ordenar_taula(tabla_busqueda, "Activitats"))
+tabla_busqueda.column("ID", width=0)  # Ocultar columna ID
+tabla_busqueda.column("DNI", width=100)
+tabla_busqueda.column("Nom", width=100)
+tabla_busqueda.column("Activitats", width=100)
 
 tabla_busqueda.pack(side="left", fill="both", expand=True)
 
@@ -115,33 +127,44 @@ scroll_busqueda = ttk.Scrollbar(frame_tablas, orient="vertical", command=tabla_b
 tabla_busqueda.configure(yscroll=scroll_busqueda.set)
 scroll_busqueda.pack(side="left", fill="y")
 
-# Botones entre tablas
-frame_botones = tk.Frame(frame_tablas)
-frame_botones.pack(side="left", padx=5)
+# Vincular l'esdeveniment de doble clic
+tabla_busqueda.bind("<Double-1>", on_double_click_busqueda)
 
-boton_pasar = tk.Button(frame_botones, text=">>", command=pasar_a_seleccion)
+# Botons entre taules
+frame_botons = tk.Frame(frame_tablas)
+frame_botons.pack(side="left", padx=5)
+
+boton_pasar = tk.Button(frame_botons, text=">>", command=passar_a_seleccio)
 boton_pasar.pack(pady=5)
 
-boton_quitar = tk.Button(frame_botones, text="<<", command=quitar_de_seleccion)
+boton_quitar = tk.Button(frame_botons, text="<<", command=treure_de_seleccio)
 boton_quitar.pack(pady=5)
 
-# Tabla de selección
-seleccion = ttk.Treeview(frame_tablas, columns=("ID", "DNI", "Nom", "Activitats"), show="headings")
-for col in ("ID", "DNI", "Nom", "Activitats"):
-    seleccion.heading(col, text=col)
-    seleccion.column(col, width=100)
+# Taula de selecció
+seleccio = ttk.Treeview(frame_tablas, columns=("ID", "DNI", "Nom", "Activitats"), show="headings")
+seleccio.heading("ID", text="ID")
+seleccio.heading("DNI", text="DNI")
+seleccio.heading("Nom", text="Nom")
+seleccio.heading("Activitats", text="Activitats")
+seleccio.column("ID", width=0)  # Ocultar columna ID
+seleccio.column("DNI", width=100)
+seleccio.column("Nom", width=100)
+seleccio.column("Activitats", width=100)
 
-seleccion.pack(side="left", fill="both", expand=True)
+seleccio.pack(side="left", fill="both", expand=True)
 
-scroll_seleccion = ttk.Scrollbar(frame_tablas, orient="vertical", command=seleccion.yview)
-seleccion.configure(yscroll=scroll_seleccion.set)
-scroll_seleccion.pack(side="left", fill="y")
+scroll_seleccio = ttk.Scrollbar(frame_tablas, orient="vertical", command=seleccio.yview)
+seleccio.configure(yscroll=scroll_seleccio.set)
+scroll_seleccio.pack(side="left", fill="y")
 
-# Botón para realizar bajas
-boton_bajas = tk.Button(ventana, text="Baixa", command=realizar_bajas)
+# Vincular l'esdeveniment de doble clic
+seleccio.bind("<Double-1>", on_double_click_seleccio)
+
+# Botó per realitzar baixes
+boton_bajas = tk.Button(ventana, text="Donar de Baixa", command=realitzar_baixes)
 boton_bajas.pack(pady=10)
 
-# Cargar datos al iniciar
+# Carregar dades a l'iniciar
 buscar_clientes()
 
 ventana.mainloop()

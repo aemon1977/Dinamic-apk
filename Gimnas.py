@@ -129,7 +129,7 @@ def get_data():
                 FROM esporadics
                 WHERE Baixa >= CURDATE()
                 ORDER BY Dies_Fins_Baixa ASC
-                LIMIT 10
+                LIMIT 100
             """)
             esporadics = cursor.fetchall()
 
@@ -247,6 +247,10 @@ def run_fitxa():
 def run_llistatsocis():
     subprocess.Popen(["python", os.path.join("socis", "llistatsocis.py")])  # Ejecutar fitxa.py
 
+# Función para ejecutar baixes.py en la carpeta 'socis'
+def run_baixasocis():
+    subprocess.Popen(["python", os.path.join("socis", "baixes.py")])  # Ejecutar baixa.py
+
 # Menus esporadics
 
 # Función para ejecutar insertar.py en la carpeta 'esporadics'
@@ -313,6 +317,7 @@ socis_menu.add_command(label="Afegir", command=run_insertar)  # Cambiado para ej
 socis_menu.add_command(label="Modificar", command=run_modificar)  # Cambiado para ejecutar filtro.py
 socis_menu.add_command(label="Fitxa", command=run_fitxa) # Cambiado para ejecutar fitxa.py
 socis_menu.add_command(label="Llistat", command=run_llistatsocis) # Cambiado para ejecutar llistatsocis.py
+socis_menu.add_command(label="baixa", command=run_baixasocis) # Cambiado para ejecutar baixa.py
 menu_bar.add_cascade(label="Socis", menu=socis_menu)
 
 # Menú de Esporádics
