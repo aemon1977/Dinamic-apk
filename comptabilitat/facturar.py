@@ -5,15 +5,23 @@ from datetime import datetime
 import subprocess
 import os
 import sys
+import configparser
+
+# Leer la configuración de la base de datos desde config.ini
+def read_db_config():
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    return {
+        "host": config.get("mysql", "host"),
+        "user": config.get("mysql", "user"),
+        "password": config.get("mysql", "password"),
+        "database": config.get("mysql", "database")
+    }
 
 # Conexión a la base de datos
 def connect_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gimnas"
-    )
+    db_config = read_db_config()
+    return mysql.connector.connect(**db_config)
 
 # Función para obtener las facturas filtradas
 def obtenir_factures(filtro_mes=None, filtro_anio=None, tipo_cliente="Ambos"):

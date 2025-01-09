@@ -9,17 +9,25 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 import tempfile
 import os
+import configparser
 
 # Permitir cargar imágenes truncadas
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Conexión a la base de datos MySQL
+# Leer configuración desde config.ini
+def leer_config():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    return config['mysql']
+
+# Conexión a la base de datos MySQL usando config.ini
 def conectar_db():
+    config = leer_config()
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",  # Cambiar a tu contraseña
-        database="gimnas"
+        host=config['host'],
+        user=config['user'],
+        password=config['password'],
+        database=config['database']
     )
 
 # Función para convertir valores binarios (0/1) en "Sí"/"No"

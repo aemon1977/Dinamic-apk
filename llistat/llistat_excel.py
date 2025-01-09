@@ -3,13 +3,17 @@ from tkinter import ttk, messagebox
 import mysql.connector
 import pandas as pd
 import os
+import configparser
 
-# Configuración de la conexión a la base de datos
+# Cargar configuración desde config.ini
+config_parser = configparser.ConfigParser()
+config_parser.read("config.ini")
+
 config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '',
-    'database': 'gimnas'
+    'host': config_parser.get('mysql', 'host'),
+    'user': config_parser.get('mysql', 'user'),
+    'password': config_parser.get('mysql', 'password'),
+    'database': config_parser.get('mysql', 'database')
 }
 
 # Función para cargar actividades de la base de datos

@@ -1,20 +1,27 @@
 import mysql.connector
+from configparser import ConfigParser
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
 import qrcode
 from reportlab.platypus import Table, TableStyle
-import os  # Importa el módulo os para abrir el archivo PDF
+import os
 
-# Configuración de la conexión a la base de datos
+def leer_config():
+    """Lee la configuración de la base de datos desde config.ini."""
+    config = ConfigParser()
+    config.read("config.ini")
+    return config["mysql"]
+
 def conectar_bd():
-    """Conecta a la base de datos MySQL."""
+    """Conecta a la base de datos MySQL usando config.ini."""
+    config = leer_config()
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",  # Ajusta si tu usuario tiene contraseña
-        database="gimnas"  # Nombre de la base de datos
+        host=config.get("host", "localhost"),
+        user=config.get("user", "root"),
+        password=config.get("password", ""),
+        database=config.get("database", "gimnas")
     )
 
 def obtener_datos_empresa():

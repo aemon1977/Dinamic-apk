@@ -5,6 +5,7 @@ import mysql.connector
 from datetime import datetime
 from tkcalendar import Calendar
 import io
+import configparser
 
 class GymManagementSystem:
     def __init__(self, root):
@@ -12,13 +13,8 @@ class GymManagementSystem:
         self.root.title("Gestió de Socis del Gimnàs")
         self.root.geometry("800x1000")
 
-        # Configuración de la base de datos
-        self.db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': '',
-            'database': 'gimnas'
-        }
+        # Cargar configuración de la base de datos desde config.ini
+        self.load_db_config()
 
         # Crear el marco principal
         self.main_frame = ttk.Frame(root, padding="20")
@@ -48,6 +44,15 @@ class GymManagementSystem:
 
         self.create_widgets()
         self.load_activities()
+    def load_db_config(self):
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        self.db_config = {
+            'host': config['mysql']['host'],
+            'user': config['mysql']['user'],
+            'password': config['mysql']['password'],
+            'database': config['mysql']['database']
+        }
 
     # Método para limpiar el formulario
     def clear_form(self):

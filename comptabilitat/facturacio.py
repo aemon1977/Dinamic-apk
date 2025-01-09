@@ -1,14 +1,22 @@
 import mysql.connector
+from configparser import ConfigParser
 from datetime import datetime, timedelta
+
+# Función para leer la configuración desde config.ini
+def read_db_config():
+    config = ConfigParser()
+    config.read("config.ini")
+    return {
+        "host": config.get("mysql", "host"),
+        "user": config.get("mysql", "user"),
+        "password": config.get("mysql", "password"),
+        "database": config.get("mysql", "database"),
+    }
 
 # Conexión a la base de datos
 def connect_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gimnas"
-    )
+    db_config = read_db_config()
+    return mysql.connector.connect(**db_config)
 
 # Crear la tabla 'facturas' si no existe
 def crear_tabla_facturas():
@@ -74,7 +82,7 @@ def facturar_socis():
 
     if hoy < primer_dia_mes_actual:
         print("No se generarán facturas antes del primer día del mes actual.")
-        return  # Salir si hoy es antes del primer día del mes actual
+        return  
 
     # Obtener socios activos
     cursor.execute("""
@@ -91,48 +99,39 @@ def facturar_socis():
         quantitat = float(socio['Quantitat'])
         alta = socio['Alta']
 
-        # Convertir 'alta' a fecha si no es None
         if alta is None:
             print(f"Error: La fecha de alta de {nom} es None.")
-            continue  # Saltar este socio si no tiene fecha de alta válida
+            continue  
 
         if isinstance(alta, str):
-            alta = datetime.strptime(alta, '%Y-%m-%d').date()  # Convertir a datetime.date si es string
+            alta = datetime.strptime(alta, '%Y-%m-%d').date()
 
-        # Determinar la fecha de inicio para facturación
         fecha_ultima_factura = obtener_fecha_ultima_factura(cliente_id)
         
-        # Si no existe fecha de última factura, usar la fecha de alta
         if fecha_ultima_factura is None:
             fecha_actual = alta
         else:
             fecha_actual = fecha_ultima_factura
 
-        # Verificar que la fecha_actual esté en el mes actual o posterior
         if fecha_actual < primer_dia_mes_actual:
-            fecha_actual = primer_dia_mes_actual  # Si la última factura fue antes del mes actual, empezamos desde el primer día de este mes
+            fecha_actual = primer_dia_mes_actual  
 
-        # Recorrer desde la última factura hasta hoy, en intervalos de 30 días
         while fecha_actual <= hoy:
-            if fecha_actual != fecha_ultima_factura:  # Evitar repetir la última factura existente
-                # Calcular desglose de precios
+            if fecha_actual != fecha_ultima_factura:  
                 iva = round(quantitat * 0.21, 2)
                 preu = round(quantitat - iva, 2)
                 total = quantitat
                 last_invoice_number += 1
                 numero_factura = f"{hoy.year}-{last_invoice_number:03d}"
 
-                # Corregir la fecha de la próxima factura (asegurarse de que no sea antes de hoy)
                 dia_proxima_factura = max(fecha_actual + timedelta(days=30), hoy)
 
-                # Insertar la factura en la base de datos
                 cursor.execute("""
                     INSERT INTO facturas (cliente_id, tipo_cliente, activitats, Preu, iva, total, impuesto, fecha, numero_factura, dia_proxima_factura)
                     VALUES (%s, 'socis', %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (cliente_id, activitats, preu, iva, total, iva, fecha_actual, numero_factura, dia_proxima_factura))
                 print(f"Factura generada para {nom}: {numero_factura}, Fecha: {fecha_actual}, Proxima factura: {dia_proxima_factura}")
 
-            # Sumar 30 días para la próxima factura
             fecha_actual += timedelta(days=30)
 
     conn.commit()

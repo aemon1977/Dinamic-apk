@@ -4,17 +4,25 @@ from datetime import datetime
 from decimal import Decimal
 from tkcalendar import Calendar, DateEntry
 import mysql.connector
+from configparser import ConfigParser
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import subprocess  # Importar para ejecutar el script
 
+# Función para leer la configuración de la base de datos
+def leer_config():
+    config = ConfigParser()
+    config.read("config.ini")
+    return config["mysql"]
+
 # Conexión a la base de datos
 def conectar_db():
+    config = leer_config()
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gimnas"
+        host=config.get("host", "localhost"),
+        user=config.get("user", "root"),
+        password=config.get("password", ""),
+        database=config.get("database", "gimnas")
     )
 
 # Clase principal de la aplicación

@@ -157,16 +157,23 @@ def cargar_en_formulario(event):
         var_facial.set(datos[18] == 1)  # Facial
         var_en_ma.set(datos[19] == 1)  # En ma
 
-        # Clear previous activity selections
-        for index in range(checked_listbox.size()):
-            checked_listbox.selection_clear(index)
+       # Clear previous activity selections
+
+        checked_listbox.selection_clear(0, tk.END)  # Limpiar todas las selecciones
+
 
         # Load activities for the selected member
+
         actividades = cargar_activitats(datos[0])
+
         for i in range(checked_listbox.size()):
+
             actividad_nombre = checked_listbox.get(i)
+
             if actividad_nombre.strip() in actividades:
-                checked_listbox.selection_set(i)
+
+                checked_listbox.selection_set(i)  # Volver a seleccionar las actividades
+
 
         entrada_quantitat.delete(0, tk.END)
         entrada_quantitat.insert(0, datos[15])  # Quantitat
@@ -247,75 +254,152 @@ busqueda_actual = ""
 
 # Función para guardar cambios
 def guardar_cambios():
+
     global foto_ruta, busqueda_actual
+
     conn = conectar_db()
+
     cursor = conn.cursor()
 
+
+    # Obtener las actividades seleccionadas
+
     actividades_seleccionadas = [checked_listbox.get(i) for i in checked_listbox.curselection()]
+
     actividades_str = ",".join(actividades_seleccionadas)
 
-    query = """UPDATE socis SET 
-        DNI = %s, 
-        Nom = %s, 
-        Carrer = %s, 
-        Codipostal = %s,
-        Poblacio = %s, 
-        Provincia = %s, 
-        email = %s, 
-        Data_naixement = %s,
-        Telefon1 = %s, 
-        Telefon2 = %s, 
-        Telefon3 = %s, 
-        Numero_Conta = %s,
-        Sepa = %s, 
-        Facial = %s, 
-        En_ma = %s, 
-        Activitats = %s, 
-        Quantitat = %s, 
-        Alta = %s, 
-        Baixa = %s, 
-        Data_Inici_activitat = %s, 
-        usuari = %s 
-    WHERE ID = %s"""
+
+    # Obtener el ID del registro seleccionado
 
     id_socis = tree.item(tree.selection())['values'][0]
 
+
+    # Obtener las actividades actuales del socio
+
+    actividades_actuales = cargar_activitats(id_socis)
+
+
+    # Combinar las actividades actuales con las nuevas seleccionadas
+
+    actividades_combinadas = set(actividades_actuales) | set(actividades_seleccionadas)
+
+    actividades_str = ",".join(actividades_combinadas)
+
+
+    query = """UPDATE socis SET 
+
+        DNI = %s, 
+
+        Nom = %s, 
+
+        Carrer = %s, 
+
+        Codipostal = %s,
+
+        Poblacio = %s, 
+
+        Provincia = %s, 
+
+        email = %s, 
+
+        Data_naixement = %s,
+
+        Telefon1 = %s, 
+
+        Telefon2 = %s, 
+
+        Telefon3 = %s, 
+
+        Numero_Conta = %s,
+
+        Sepa = %s, 
+
+        Facial = %s, 
+
+        En_ma = %s, 
+
+        Activitats = %s, 
+
+        Quantitat = %s, 
+
+        Alta = %s, 
+
+        Baixa = %s, 
+
+        Data_Inici_activitat = %s, 
+
+        usuari = %s 
+
+    WHERE ID = %s"""
+
+
     # Obtener el valor de "Baixa" y manejar el caso de "None"
+
     baixa_value = entrada_data_baixa.get()  # Obtener el valor directamente
 
+
     # Si el campo está vacío o contiene 'none', asignar None
+
     if baixa_value == "" or baixa_value.lower() == "none":
+
         baixa_value = None  # Asignar None para que se guarde como NULL en la base de datos
+
     else:
+
         # Convertir a formato yyyy-mm-dd
+
         baixa_value = datetime.strptime(baixa_value, '%d-%m-%Y').strftime('%Y-%m-%d')
 
+
     if foto_ruta:
+
         foto_blob = obtener_foto_blob()
+
         cursor.execute(query + ", Foto = %s", (
+
             entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
+
             entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
+
             entrada_email.get(), entrada_data_naixement.get_date(), entrada_telefon1.get(),
+
             entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
+
             var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
+
             entrada_data_alta.get_date(), baixa_value, entrada_data_inici_activitat.get_date(), entrada_usuari.get(), id_socis, foto_blob
-        ))
-    else:
-        cursor.execute(query, (
-            entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
-            entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
-            entrada_email.get(), entrada_data_naixement.get_date(), entrada_telefon1.get(),
-            entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
-            var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
-            entrada_data_alta.get_date(), baixa_value, entrada_data_inici_activitat.get_date(), entrada_usuari.get(), id_socis
+
         ))
 
+    else:
+
+        cursor.execute(query, (
+
+            entrada_dni.get(), entrada_nom.get(), entrada_carrer.get(),
+
+            entrada_codipostal.get(), entrada_poblacio.get(), entrada_provincia.get(),
+
+            entrada_email.get(), entrada_data_naixement.get_date(), entrada_telefon1.get(),
+
+            entrada_telefon2.get(), entrada_telefon3.get(), entrada_numero_conta.get(),
+
+            var_sepa.get(), var_facial.get(), var_en_ma.get(), actividades_str, entrada_quantitat.get(),
+
+            entrada_data_alta.get_date(), baixa_value, entrada_data_inici_activitat.get_date(), entrada_usuari.get(), id_socis
+
+        ))
+
+
     conn.commit()
+
     conn.close()
+
 
     messagebox.showinfo("Éxit", "Dades actualizades correctament.")
 
+
     # Mostrar los datos filtrados después de guardar
+
     mostrar_datos(busqueda_actual)
 
 # Función para obtener el BLOB de la foto

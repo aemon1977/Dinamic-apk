@@ -1,13 +1,18 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import mysql.connector
+import configparser
+
+# Cargar configuración desde config.ini
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 # Configuración de la base de datos
 db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '',
-    'database': 'gimnas'
+    'host': config.get("mysql", "host"),
+    'user': config.get("mysql", "user"),
+    'password': config.get("mysql", "password"),
+    'database': config.get("mysql", "database")
 }
 
 # Función para conectar con la base de datos
@@ -16,7 +21,7 @@ def connect_db():
 
 # Función para agregar una nueva actividad
 def agregar_actividad():
-    nombre = entry_nom.get()
+    nombre = entry_nom.get().strip()
     if nombre:
         try:
             conn = connect_db()
@@ -33,10 +38,16 @@ def agregar_actividad():
         messagebox.showwarning("Avís", "El camp de nom és obligatori.")
 
 # Función para eliminar una actividad de la tabla 'activitats' y de la columna 'activitats' de la tabla 'socis'
-def eliminar_actividad(id_activitat):
-    if id_activitat and messagebox.askyesno("Confirmació", "Estàs segur que vols eliminar aquesta activitat?"):
+def eliminar_actividad():
+    seleccion = tree.selection()
+    if not seleccion:
+        messagebox.showwarning("Avís", "Selecciona una activitat per eliminar.")
+        return
+
+    id_activitat = tree.item(seleccion)['values'][0]
+
+    if messagebox.askyesno("Confirmació", "Estàs segur que vols eliminar aquesta activitat?"):
         try:
-            # Primero, eliminar la actividad de todos los socios
             conn = connect_db()
             cursor = conn.cursor()
 
@@ -46,14 +57,13 @@ def eliminar_actividad(id_activitat):
             if actividad_nombre:
                 actividad_nombre = actividad_nombre[0]
 
-                # Actualizar la columna 'activitats' de los socios, eliminando la actividad seleccionada
+                # Eliminar la actividad de los socios
                 cursor.execute("""
                     UPDATE socis
                     SET activitats = REPLACE(activitats, %s, '')
                     WHERE FIND_IN_SET(%s, activitats) > 0
                 """, (actividad_nombre, actividad_nombre))
 
-                # Limpiar las comas sobrantes si la actividad está al principio o al final de la lista
                 cursor.execute("""
                     UPDATE socis
                     SET activitats = TRIM(BOTH ',' FROM activitats)
@@ -62,12 +72,12 @@ def eliminar_actividad(id_activitat):
 
                 conn.commit()
 
-                # Luego eliminar la actividad de la tabla 'activitats'
+                # Eliminar la actividad de la tabla 'activitats'
                 cursor.execute("DELETE FROM activitats WHERE id = %s", (id_activitat,))
                 conn.commit()
 
                 conn.close()
-                cargar_activitats()  # Actualizar la lista después de eliminar
+                cargar_activitats()
                 messagebox.showinfo("Èxit", "Activitat eliminada amb èxit.")
             else:
                 messagebox.showerror("Error", "Activitat no trobada.")
@@ -96,8 +106,8 @@ def ajustar_columnas():
         max_length = max(
             [len(str(tree.set(item, col))) for item in tree.get_children()] + [len(col)]
         )
-        tree.column(col, width=max_length * 10, stretch=True)  # Ajusta el factor multiplicador si es necesario
-        
+        tree.column(col, width=max_length * 10, stretch=True)
+
 # Configuración de la ventana principal
 root = tk.Tk()
 root.title("Gestionar Activitats")
@@ -125,7 +135,7 @@ tree.heading("Nom", text="Nom")
 tree.pack(padx=10, pady=5)
 
 # Botón para eliminar una actividad seleccionada
-btn_eliminar = tk.Button(root, text="Eliminar Seleccionat", command=lambda: eliminar_actividad(tree.item(tree.selection())['values'][0] if tree.selection() else None))
+btn_eliminar = tk.Button(root, text="Eliminar Seleccionat", command=eliminar_actividad)
 btn_eliminar.pack(pady=5)
 
 # Cargar las actividades al iniciar la aplicación

@@ -1,18 +1,18 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import mysql.connector
-
+import configparser
 
 class ContabilitatApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Gestió Financera - Esporàdics")
-        self.conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gimnas"
-        )
+
+        # Cargar configuración desde config.ini
+        self.db_config = self.load_db_config()
+
+        # Conectar a la base de datos
+        self.conn = mysql.connector.connect(**self.db_config)
         self.cursor = self.conn.cursor()
 
         # Variables per als filtres
@@ -27,6 +27,17 @@ class ContabilitatApp:
 
         # Carregar dades inicials
         self.filter_data()
+
+    def load_db_config(self):
+        """Carga la configuración de la base de datos desde el archivo config.ini."""
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+        return {
+            "host": config["mysql"]["host"],
+            "user": config["mysql"]["user"],
+            "password": config["mysql"]["password"],
+            "database": config["mysql"]["database"],
+        }
 
     def setup_ui(self):
         # Estil

@@ -1,7 +1,13 @@
 import qrcode
 import mysql.connector
+import configparser
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+
+def leer_config():
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    return config["mysql"]
 
 def generar_qr(pagina_web, output_path):
     qr = qrcode.QRCode(
@@ -54,12 +60,12 @@ def crear_pdf(logo_path, datos_empresa):
     print("PDF generado: factura_empresa.pdf")
 
 def obtener_datos_empresa():
-    # Conectar a la base de datos MySQL
+    config = leer_config()
     conexion = mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='',
-        database='gimnas'
+        host=config["host"],
+        user=config["user"],
+        password=config["password"],
+        database=config["database"]
     )
     cursor = conexion.cursor(dictionary=True)
     cursor.execute("SELECT nom, adresa, poblacio, provincia, codi_postal, telefon, mobil, email, pagina_web FROM empresa WHERE id = 1")

@@ -1,3 +1,4 @@
+import configparser
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
@@ -12,12 +13,15 @@ class GymManagementSystem:
         self.root.title("Gestió de esporadics del Gimnàs")
         self.root.geometry("800x1000")
 
-        # Configuración de la base de datos
+        # Cargar configuración desde config.ini
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+
         self.db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': '',
-            'database': 'gimnas'
+            'host': config.get('mysql', 'host'),
+            'user': config.get('mysql', 'user'),
+            'password': config.get('mysql', 'password'),
+            'database': config.get('mysql', 'database')
         }
 
         # Crear el marco principal

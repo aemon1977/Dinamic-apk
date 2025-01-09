@@ -2,14 +2,22 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import mysql.connector
 from datetime import datetime
+import configparser
 
-# Conexión a la base de datos
+# Función para leer la configuración de la base de datos desde config.ini
+def leer_config():
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    return config["mysql"]
+
+# Conexión a la base de datos usando config.ini
 def connect_db():
+    config = leer_config()
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gimnas"
+        host=config["host"],
+        user=config["user"],
+        password=config["password"],
+        database=config["database"]
     )
 
 # Función para obtener el último número de factura

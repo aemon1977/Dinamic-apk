@@ -3,15 +3,23 @@ from fpdf import FPDF
 import os
 import qrcode
 from datetime import datetime
+import configparser
+
+# Leer configuración desde config.ini
+def obtener_config():
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    return config["mysql"]
 
 # Conexión a la base de datos
 def obtener_datos_factura(numero_factura):
     try:
+        config = obtener_config()
         conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gimnas"
+            host=config["host"],
+            user=config["user"],
+            password=config["password"],
+            database=config["database"]
         )
         cursor = conexion.cursor(dictionary=True)
         

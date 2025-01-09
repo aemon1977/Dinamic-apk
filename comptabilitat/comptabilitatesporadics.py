@@ -1,18 +1,24 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import mysql.connector
+import configparser
 
 
 class ContabilitatApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Gestió Financera - Esporàdics")
+
+        # Leer configuración desde config.ini
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+
         try:
             self.conn = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="",
-                database="gimnas"
+                host=config["mysql"]["host"],
+                user=config["mysql"]["user"],
+                password=config["mysql"]["password"],
+                database=config["mysql"]["database"]
             )
         except mysql.connector.Error as err:
             messagebox.showerror("Error", f"Error al conectar a la base de datos: {err}")
@@ -21,22 +27,22 @@ class ContabilitatApp:
 
         self.cursor = self.conn.cursor()
 
-        # Variables per als filtres
+        # Variables para los filtros
         self.selected_month = tk.StringVar()
         self.selected_year = tk.StringVar()
 
-        # Variable per mostrar el total global
+        # Variable para mostrar el total global
         self.total_global_var = tk.StringVar(value="Total: 0.00 €")
 
-        # Configuració de la interfície
+        # Configuración de la interfaz
         self.setup_ui()
 
-        # Carregar dades inicials
-        self.import_data()  # Importar dades al iniciar
+        # Cargar datos iniciales
+        self.import_data()  # Importar datos al iniciar
         self.filter_data()
 
     def setup_ui(self):
-        # Estil
+        # Estilos
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("TLabel", font=("Arial", 12))
@@ -50,7 +56,7 @@ class ContabilitatApp:
         header_frame = ttk.Frame(main_frame)
         header_frame.pack(fill="x", pady=5)
 
-        # Filtres
+        # Filtros
         filter_frame = ttk.Frame(main_frame, padding=10)
         filter_frame.pack(fill="x", pady=10)
 
@@ -94,7 +100,7 @@ class ContabilitatApp:
         )
         self.total_label.pack()
 
-        # Taula per mostrar dades
+        # Tabla para mostrar datos
         table_frame = ttk.Frame(main_frame)
         table_frame.pack(fill="both", expand=True, pady=10)
 

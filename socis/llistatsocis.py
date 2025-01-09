@@ -1,5 +1,3 @@
-# /path/to/generate_excel_gui.py
-
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import mysql.connector
@@ -7,6 +5,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side
 import os
 import platform
+import configparser
 
 def generar_excel(tipo, datos, archivo):
     # Crear un nuevo archivo Excel
@@ -57,12 +56,15 @@ def generar_excel(tipo, datos, archivo):
         messagebox.showerror("Error", f"No se pudo abrir el archivo automáticamente: {e}")
 
 def conectar_bd():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    
     try:
         return mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gimnas"
+            host=config['mysql']['host'],
+            user=config['mysql']['user'],
+            password=config['mysql']['password'],
+            database=config['mysql']['database']
         )
     except mysql.connector.Error as err:
         messagebox.showerror("Error", f"No se pudo conectar a la base de datos: {err}")
